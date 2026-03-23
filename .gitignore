@@ -1,0 +1,11 @@
+# Node modules (Frontend)
+frontend/node_modules/
+frontend/.next/
+
+# Environment variables
+backend/.env
+frontend/.env.local
+
+# Build files (Backend)
+backend/*.exe
+backend/*.out

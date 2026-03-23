@@ -1,0 +1,12 @@
+# Mengabaikan file environment yang berisi password database
+.env
+
+# Mengabaikan file binary hasil kompilasi Go (jika kamu build)
+jalcode-api
+jalcode-api.exe
+*.exe
+*.test
+*.out
+
+# Mengabaikan folder vendor jika sewaktu-waktu digunakan
+vendor/

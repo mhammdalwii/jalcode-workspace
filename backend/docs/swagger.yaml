@@ -1,0 +1,23 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.
+  title: Jalcode API Documentation
+  version: "1.0"
+paths:
+  /api/teams/:
+    get:
+      description: Mendapatkan daftar lengkap semua tim beserta role-nya
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Mengambil semua data anggota tim
+      tags:
+      - Teams
+swagger: "2.0"

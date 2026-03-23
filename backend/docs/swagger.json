@@ -1,0 +1,34 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.",
+        "title": "Jalcode API Documentation",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/api/teams/": {
+            "get": {
+                "description": "Mendapatkan daftar lengkap semua tim beserta role-nya",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Mengambil semua data anggota tim",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
