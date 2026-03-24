@@ -65,3 +65,12 @@ Buka terminal baharu, masuk ke direktori `backend`, dan jalankan pelayan:
 cd backend
 go run main.go
 ```
+
+### Langkah 2: Jalankan Frontend (Next.js)
+
+Buka terminal kedua, masuk ke direktori frontend, dan jalankan persekitaran pembangunan:
+
+```bash
+cd frontend
+npm run dev
+```
