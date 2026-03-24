@@ -27,7 +27,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// 2. Siapkan data untuk disimpan ke database
+	// Siapkan data untuk disimpan ke database
 	user := models.TeamMember{
 		Name:     input.Name,
 		Role:     input.Role,

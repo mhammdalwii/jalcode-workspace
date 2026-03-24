@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
-import { LogOut, Plus, Trash2, Edit, Briefcase, Users } from "lucide-react";
+import { LogOut, Plus, Trash2, Edit, Briefcase, Users, CheckCircle, Clock, FolderOpen } from "lucide-react";
 
 import { TeamMember, Project } from "@/types";
 import ProjectModal from "@/components/ProjectModal";
@@ -108,6 +108,11 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  const totalTeams = teams.length;
+  const totalProjects = projects?.length || 0;
+  const activeProjects = projects?.filter((p) => p.status !== "Selesai").length || 0;
+  const completedProjects = projects?.filter((p) => p.status === "Selesai").length || 0;
+
   if (isLoading) return <div className="min-h-screen flex justify-center items-center">Memuat Workspace...</div>;
 
   return (
@@ -124,6 +129,60 @@ export default function DashboardPage() {
           <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition">
             <LogOut size={18} /> Logout
           </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Kartu 1: Total Tim */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+              <Users size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Tim</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {totalTeams} <span className="text-sm font-normal text-gray-500">Orang</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Kartu 2: Total Proyek */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+              <FolderOpen size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Total Proyek</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {totalProjects} <span className="text-sm font-normal text-gray-500">Klien</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Kartu 3: Proyek Aktif */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="p-3 bg-yellow-50 text-yellow-600 rounded-lg">
+              <Clock size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Sedang Berjalan</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {activeProjects} <span className="text-sm font-normal text-gray-500">Proyek</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Kartu 4: Proyek Selesai */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
+            <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+              <CheckCircle size={24} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Selesai</p>
+              <h3 className="text-2xl font-bold text-gray-900">
+                {completedProjects} <span className="text-sm font-normal text-gray-500">Proyek</span>
+              </h3>
+            </div>
+          </div>
         </div>
 
         {/* TAB NAVIGASI */}
