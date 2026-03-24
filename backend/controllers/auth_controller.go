@@ -36,8 +36,11 @@ func Register(c *gin.Context) {
 	}
 
 	// Simpan ke database
-	if err := config.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Email mungkin sudah terdaftar"})
+if err := config.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Gagal menyimpan data",
+			"detail": err.Error(), 
+		})
 		return
 	}
 

@@ -32,12 +32,13 @@ func main() {
 	// })
 
 	config.ConnectDatabase()
+	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
 	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{})
 
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		// Izinkan frontend Next.js/React yang biasanya jalan di port 3000
+		//  frontend Next.js/React yang biasanya jalan di port 3000
 		// Jika nanti sudah deploy, ganti dengan domain aslimu (misal: "https://jalcode.com")
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
@@ -54,6 +55,7 @@ func main() {
 	// route tim di sini
 	routes.SetupTeamRoutes(r)
 	routes.SetupProjectRoutes(r)
+	routes.SetupAuthRoutes(r)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	//  server di port 8080

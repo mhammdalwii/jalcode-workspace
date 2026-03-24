@@ -9,7 +9,7 @@ type Project struct {
 	Category     string     `gorm:"type:varchar(100)" json:"category" binding:"required"`
 	Status       string     `gorm:"type:varchar(50)" json:"status" binding:"required"`
 	TeamMemberID uint       `json:"team_member_id" binding:"required"` 
-	TeamMember   TeamMember `gorm:"foreignKey:TeamMemberID" json:"team_member"`
+	TeamMember   TeamMember `gorm:"foreignKey:TeamMemberID" json:"team_member" binding:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
