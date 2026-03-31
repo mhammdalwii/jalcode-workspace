@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // GetTeamMembers godoc
@@ -14,6 +15,7 @@ import (
 // @Tags Teams
 // @Produce json
 // @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
 // @Router /api/teams/ [get]
 // Mengambil semua data anggota tim
 func GetTeamMembers(c *gin.Context) {
@@ -26,7 +28,15 @@ func GetTeamMembers(c *gin.Context) {
 	})
 }
 
-// Menambahkan anggota tim baru
+// @Summary Menambahkan anggota tim baru
+// @Description Mendaftarkan anggota tim baru ke dalam sistem
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Param body body models.TeamMember true "Data Anggota Tim"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/teams [post]
 func CreateTeamMember(c *gin.Context) {
 	var input models.TeamMember
 
@@ -45,49 +55,86 @@ func CreateTeamMember(c *gin.Context) {
 	})
 }
 
+// @Summary Mengedit data anggota tim
+// @Description Memperbarui nama, role, email, atau password anggota tim berdasarkan ID
+// @Tags Teams
+// @Accept json
+// @Produce json
+// @Param id path string true "ID Anggota Tim"
+// @Param body body map[string]string true "Data Update"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/teams/{id} [put]
 func UpdateTeamMember(c *gin.Context) {
-	//  ID dari URL
 	id := c.Param("id")
 	var team models.TeamMember
 
-	//  data di database berdasarkan ID
-	// Jika tidak ditemukan, kembalikan error 404
+	// Cek apakah anggota tim ada di database
 	if err := config.DB.First(&team, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tim tidak ditemukan!"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tim tidak ditemukan"})
 		return
 	}
 
-	// data JSON baru dari client
-	var input models.TeamMember
+	// Struct khusus untuk menangkap inputan (karena password sifatnya opsional saat edit)
+	var input struct {
+		Name     string `json:"name"`
+		Role     string `json:"role"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid"})
 		return
 	}
 
-	// update data ke database
-	config.DB.Model(&team).Updates(input)
+	// Timpa data lama dengan data baru
+	team.Name = input.Name
+	team.Role = input.Role
+	team.Email = input.Email
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Data anggota tim berhasil diperbarui!",
-		"data":    team,
-	})
+	// Jika input password TIDAK kosong, berarti user ingin ganti password
+	if input.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+		if err == nil {
+			team.Password = string(hashedPassword)
+		}
+	}
+
+	// Simpan perubahan ke database
+	if err := config.DB.Save(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui data anggota"})
+		return
+	}
+
+	// Jangan kembalikan password yang sudah di-hash ke frontend untuk keamanan
+	team.Password = "" 
+	c.JSON(http.StatusOK, gin.H{"message": "Data anggota berhasil diperbarui", "data": team})
 }
 
+// @Summary Menghapus anggota tim
+// @Description Menghapus data anggota tim secara permanen berdasarkan ID
+// @Tags Teams
+// @Produce json
+// @Param id path string true "ID Anggota Tim"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/teams/{id} [delete]
 func DeleteTeamMember(c *gin.Context) {
-	//  Ambil ID dari URL
 	id := c.Param("id")
 	var team models.TeamMember
 
-	// data terlebih dahulu
+	// Cek apakah anggota tim ada
 	if err := config.DB.First(&team, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tim tidak ditemukan!"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tim tidak ditemukan"})
 		return
 	}
 
-	//  data dari database
-	config.DB.Delete(&team)
+	// Hapus data dari database
+	if err := config.DB.Delete(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus anggota tim"})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Anggota tim berhasil dihapus dari sistem!",
-	})
+	c.JSON(http.StatusOK, gin.H{"message": "Anggota tim berhasil dihapus"})
 }

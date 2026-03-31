@@ -12,3 +12,13 @@ export interface Project {
   status: string;
   pic?: TeamMember;
 }
+
+export interface Client {
+  id: number;
+  company: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  created_at?: string;
+}

@@ -10,6 +10,8 @@ type Project struct {
 	Status       string     `gorm:"type:varchar(50)" json:"status" binding:"required"`
 	TeamMemberID uint       `json:"team_member_id" binding:"required"` 
 	TeamMember   TeamMember `gorm:"foreignKey:TeamMemberID" json:"team_member" binding:"-"`
+	ClientID  *uint   `json:"client_id"` 
+	Client    *Client `json:"client,omitempty" gorm:"foreignKey:ClientID" binding:"-"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }

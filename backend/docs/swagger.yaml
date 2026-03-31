@@ -1,4 +1,83 @@
 basePath: /
+definitions:
+  models.Client:
+    properties:
+      address:
+        type: string
+      company:
+        type: string
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      projects:
+        description: Relasi One-to-Many
+        items:
+          $ref: '#/definitions/models.Project'
+        type: array
+      updated_at:
+        type: string
+    required:
+    - company
+    - name
+    type: object
+  models.Project:
+    properties:
+      category:
+        type: string
+      client:
+        $ref: '#/definitions/models.Client'
+      client_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      status:
+        type: string
+      team_member:
+        $ref: '#/definitions/models.TeamMember'
+      team_member_id:
+        type: integer
+      title:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - category
+    - status
+    - team_member_id
+    - title
+    type: object
+  models.TeamMember:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      projects:
+        items:
+          $ref: '#/definitions/models.Project'
+        type: array
+      role:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - email
+    - name
+    - role
+    type: object
 host: localhost:8080
 info:
   contact: {}
@@ -6,6 +85,171 @@ info:
   title: Jalcode API Documentation
   version: "1.0"
 paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Melakukan autentikasi menggunakan email dan password untuk mendapatkan
+        token JWT
+      parameters:
+      - description: Kredensial (email, password)
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil login & mendapat token
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login pengguna
+      tags:
+      - Auth
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan akun baru ke dalam sistem
+      parameters:
+      - description: Data Pendaftaran
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TeamMember'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register pengguna / Tambah Tim
+      tags:
+      - Auth
+  /api/clients:
+    get:
+      description: Menampilkan daftar semua klien beserta proyek yang mereka miliki
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil semua data klien
+      tags:
+      - Clients
+    post:
+      consumes:
+      - application/json
+      description: Menyimpan data perusahaan/klien baru ke database
+      parameters:
+      - description: Data Klien
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Client'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah klien baru
+      tags:
+      - Clients
+  /api/clients/{id}:
+    delete:
+      description: Menghapus klien dari sistem
+      parameters:
+      - description: ID Klien
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus data klien
+      tags:
+      - Clients
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi klien berdasarkan ID
+      parameters:
+      - description: ID Klien
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Klien
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Client'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update data klien
+      tags:
+      - Clients
+  /api/teams:
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan anggota tim baru ke dalam sistem
+      parameters:
+      - description: Data Anggota Tim
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.TeamMember'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Menambahkan anggota tim baru
+      tags:
+      - Teams
   /api/teams/:
     get:
       description: Mendapatkan daftar lengkap semua tim beserta role-nya
@@ -17,7 +261,68 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Mengambil semua data anggota tim
       tags:
       - Teams
+  /api/teams/{id}:
+    delete:
+      description: Menghapus data anggota tim secara permanen berdasarkan ID
+      parameters:
+      - description: ID Anggota Tim
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Menghapus anggota tim
+      tags:
+      - Teams
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui nama, role, email, atau password anggota tim berdasarkan
+        ID
+      parameters:
+      - description: ID Anggota Tim
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Mengedit data anggota tim
+      tags:
+      - Teams
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

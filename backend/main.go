@@ -20,6 +20,9 @@ import (
 // @description REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.
 // @host localhost:8080
 // @BasePath /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// // Inisialisasi router Gin
 	// r := gin.Default()
@@ -33,7 +36,8 @@ func main() {
 
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{})
+	
 
 	r := gin.Default()
 
@@ -56,6 +60,7 @@ func main() {
 	routes.SetupTeamRoutes(r)
 	routes.SetupProjectRoutes(r)
 	routes.SetupAuthRoutes(r)
+	routes.SetupClientRoutes(r)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	//  server di port 8080

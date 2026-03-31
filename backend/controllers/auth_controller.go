@@ -11,6 +11,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// @Summary Register pengguna / Tambah Tim
+// @Description Mendaftarkan akun baru ke dalam sistem
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body models.TeamMember true "Data Pendaftaran"
+// @Success 200 {object} map[string]interface{}
+// @Router /api/auth/register [post]
 // Register - Mendaftarkan anggota tim baru
 func Register(c *gin.Context) {
 	var input dto.RegisterRequest
@@ -47,7 +55,14 @@ if err := config.DB.Create(&user).Error; err != nil {
 	c.JSON(http.StatusCreated, gin.H{"message": "Registrasi berhasil! Silakan login."})
 }
 
-// Login - Mengecek email & password, lalu memberikan JWT
+// @Summary Login pengguna
+// @Description Melakukan autentikasi menggunakan email dan password untuk mendapatkan token JWT
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body map[string]string true "Kredensial (email, password)"
+// @Success 200 {object} map[string]interface{} "Berhasil login & mendapat token"
+// @Router /api/auth/login [post]
 func Login(c *gin.Context) {
 	var input dto.LoginRequest
 
