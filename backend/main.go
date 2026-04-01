@@ -36,7 +36,7 @@ func main() {
 
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{})
 	
 
 	r := gin.Default()
@@ -61,6 +61,7 @@ func main() {
 	routes.SetupProjectRoutes(r)
 	routes.SetupAuthRoutes(r)
 	routes.SetupClientRoutes(r)
+	routes.SetupMenteeRoutes(r)
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	//  server di port 8080

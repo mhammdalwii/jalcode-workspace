@@ -6,11 +6,14 @@ export interface TeamMember {
 }
 
 export interface Project {
+  team_member_id: number;
+  client_id: number;
   id: number;
   title: string;
   category: string;
   status: string;
   pic?: TeamMember;
+  client?: Client;
 }
 
 export interface Client {
@@ -21,4 +24,17 @@ export interface Client {
   phone?: string;
   address?: string;
   created_at?: string;
+}
+
+export interface Mentee {
+  id: number;
+  name: string;
+  email?: string;
+  program: string;
+  status: string;
+  mentor_id: number;
+  mentor?: {
+    name: string;
+    role: string;
+  };
 }

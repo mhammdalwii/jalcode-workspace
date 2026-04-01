@@ -232,6 +232,150 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/mentees": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menampilkan daftar semua mentee beserta mentornya",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mentorship"
+                ],
+                "summary": "Ambil semua data peserta didik",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mendaftarkan mentee baru ke dalam program mentorship",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mentorship"
+                ],
+                "summary": "Tambah peserta didik baru",
+                "parameters": [
+                    {
+                        "description": "Data Mentee",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Mentee"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/mentees/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui informasi mentee berdasarkan ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mentorship"
+                ],
+                "summary": "Update data peserta didik",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Mentee",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Mentee"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus mentee dari sistem",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mentorship"
+                ],
+                "summary": "Hapus data peserta didik",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Mentee",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/teams": {
             "post": {
                 "security": [
@@ -417,6 +561,43 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/models.Project"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Mentee": {
+            "type": "object",
+            "required": [
+                "name",
+                "program",
+                "status"
+            ],
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "mentor": {
+                    "$ref": "#/definitions/models.TeamMember"
+                },
+                "mentor_id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "program": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 },
                 "updated_at": {
                     "type": "string"

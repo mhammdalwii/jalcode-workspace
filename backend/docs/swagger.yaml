@@ -27,6 +27,31 @@ definitions:
     - company
     - name
     type: object
+  models.Mentee:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      mentor:
+        $ref: '#/definitions/models.TeamMember'
+      mentor_id:
+        type: integer
+      name:
+        type: string
+      program:
+        type: string
+      status:
+        type: string
+      updated_at:
+        type: string
+    required:
+    - name
+    - program
+    - status
+    type: object
   models.Project:
     properties:
       category:
@@ -225,6 +250,97 @@ paths:
       summary: Update data klien
       tags:
       - Clients
+  /api/mentees:
+    get:
+      description: Menampilkan daftar semua mentee beserta mentornya
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil semua data peserta didik
+      tags:
+      - Mentorship
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan mentee baru ke dalam program mentorship
+      parameters:
+      - description: Data Mentee
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Mentee'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah peserta didik baru
+      tags:
+      - Mentorship
+  /api/mentees/{id}:
+    delete:
+      description: Menghapus mentee dari sistem
+      parameters:
+      - description: ID Mentee
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus data peserta didik
+      tags:
+      - Mentorship
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi mentee berdasarkan ID
+      parameters:
+      - description: ID Mentee
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.Mentee'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update data peserta didik
+      tags:
+      - Mentorship
   /api/teams:
     post:
       consumes:

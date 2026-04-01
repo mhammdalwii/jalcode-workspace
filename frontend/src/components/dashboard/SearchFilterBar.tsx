@@ -1,7 +1,7 @@
 import { Search, Filter } from "lucide-react";
 
 interface SearchFilterBarProps {
-  activeTab: "projects" | "teams" | "clients";
+  activeTab: "projects" | "teams" | "clients" | "mentees";
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   filterStatus: string;

@@ -1,5 +1,7 @@
 package dto
 
+import "jalcode-api/models"
+
 // Format tampilan untuk data Tim di dalam Proyek (Tanpa tanggal dan tanpa array projects yang null)
 type TeamMemberResponse struct {
 	ID    uint   `json:"id"`
@@ -15,4 +17,5 @@ type ProjectResponse struct {
 	Category   string             `json:"category"`
 	Status     string             `json:"status"`
 	PIC        TeamMemberResponse `json:"pic"` 
+	Client   *models.Client     `json:"client,omitempty"`
 } 

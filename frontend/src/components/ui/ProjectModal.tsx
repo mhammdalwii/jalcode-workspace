@@ -1,56 +1,77 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Cookies from "js-cookie";
 import toast from "react-hot-toast";
-import { Project, TeamMember } from "@/types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Client, Project, TeamMember } from "@/types";
+import { projectSchema, ProjectFormValues } from "@/validations";
 
 interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   teams: TeamMember[];
-  editData?: Project | null; // Jika ada isinya, berarti mode Edit. Jika kosong, mode Tambah.
+  clients: Client[];
+  editData?: Project | null;
 }
 
-export default function ProjectModal({ isOpen, onClose, onSuccess, teams, editData }: ProjectModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    category: "Web Application",
-    status: "Antrean",
-    team_member_id: 0,
+export default function ProjectModal({ isOpen, onClose, onSuccess, teams, clients, editData }: ProjectModalProps) {
+  //INISIALISASI REACT HOOK FORM
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProjectFormValues>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      title: "",
+      client_id: "",
+      category: "Web Application",
+      status: "Antrean",
+      team_member_id: "",
+    },
   });
 
-  // Isi form otomatis jika masuk mode Edit
+  // 3. AUTO-FILL SAAT MODE EDIT
   useEffect(() => {
     if (editData) {
-      setFormData({
+      reset({
         title: editData.title,
+        client_id: editData.client_id ? String(editData.client_id) : "",
         category: editData.category,
         status: editData.status,
-        team_member_id: editData.pic?.id || 0,
+        team_member_id: String(editData.team_member_id || ""),
       });
     } else {
-      setFormData({ title: "", category: "Web Application", status: "Antrean", team_member_id: 0 });
+      reset({
+        title: "",
+        client_id: "",
+        category: "Web Application",
+        status: "Antrean",
+        team_member_id: "",
+      });
     }
-  }, [editData, isOpen]);
+  }, [editData, isOpen, reset]);
 
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // 4. FUNGSI SUBMIT
+  const onSubmit = async (data: ProjectFormValues) => {
     try {
       const token = Cookies.get("token");
-      if (!formData.team_member_id) throw new Error("Silakan pilih PIC!");
-
       const url = editData ? `http://localhost:8080/api/projects/${editData.id}` : "http://localhost:8080/api/projects/";
       const method = editData ? "PUT" : "POST";
+
+      // Persiapkan data untuk backend (Convert ID kembali ke Number)
+      const payload = {
+        ...data,
+        client_id: data.client_id ? Number(data.client_id) : "",
+        team_member_id: Number(data.team_member_id),
+      };
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ...formData, team_member_id: Number(formData.team_member_id) }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(`Gagal ${editData ? "memperbarui" : "menambahkan"} proyek`);
@@ -58,26 +79,42 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, editDa
       toast.success(`Proyek berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
         <h3 className="text-xl font-bold mb-4 text-gray-900">{editData ? "Edit Proyek" : "Tambah Proyek Baru"}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4 text-gray-800">
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-gray-800">
           <div>
-            <label className="block text-sm font-medium mb-1">Nama Proyek</label>
-            <input type="text" required className="w-full px-3 py-2 border rounded-lg" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+            <label className="block text-sm font-medium mb-1">Nama Proyek *</label>
+            <input type="text" {...register("title")} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.title ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-200"}`} />
+            {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Perusahaan / Klien</label>
+            <select {...register("client_id")} className="w-full px-3 py-2 border rounded-lg text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+              <option value="">-- Proyek Internal (Tanpa Klien) --</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.company} - {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">Kategori</label>
-              <select className="w-full px-3 py-2 border rounded-lg" value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+              <select {...register("category")} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200">
                 <option value="Web Application">Web Application</option>
                 <option value="Mobile Application">Mobile Application</option>
                 <option value="UI/UX & Brand Design">UI/UX & Brand Design</option>
@@ -86,7 +123,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, editDa
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">Status</label>
-              <select className="w-full px-3 py-2 border rounded-lg" value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+              <select {...register("status")} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200">
                 <option value="Antrean">Antrean</option>
                 <option value="Proses">Proses</option>
                 <option value="Revisi">Revisi</option>
@@ -94,19 +131,20 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, editDa
               </select>
             </div>
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">PIC (Penanggung Jawab)</label>
-            <select required className="w-full px-3 py-2 border rounded-lg" value={formData.team_member_id} onChange={(e) => setFormData({ ...formData, team_member_id: Number(e.target.value) })}>
-              <option value={0} disabled>
-                -- Pilih Tim --
-              </option>
+            <label className="block text-sm font-medium mb-1">PIC (Penanggung Jawab) *</label>
+            <select {...register("team_member_id")} className={`w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 ${errors.team_member_id ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-200"}`}>
+              <option value="">-- Pilih Tim --</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name} ({t.role})
                 </option>
               ))}
             </select>
+            {errors.team_member_id && <p className="text-red-500 text-xs mt-1">{errors.team_member_id.message}</p>}
           </div>
+
           <div className="flex gap-3 mt-6">
             <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg hover:bg-gray-50">
               Batal
