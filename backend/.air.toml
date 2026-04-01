@@ -1,0 +1,19 @@
+# Air configuration for Jalcode backend (Windows)
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Build backend into a temp binary
+cmd = "go build -o ./tmp/app.exe ."
+bin = "./tmp/app.exe"
+include_ext = ["go"]
+exclude_dir = ["tmp", "vendor"]
+
+[log]
+time = true
+
+[color]
+main = "magenta"
+watcher = "cyan"
+builder = "yellow"
+app = "green"
