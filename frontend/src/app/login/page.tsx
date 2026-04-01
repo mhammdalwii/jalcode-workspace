@@ -34,7 +34,7 @@ export default function LoginPage() {
       Cookies.set("token", data.token, { expires: 1 });
 
       // Arahkan user ke halaman dashboard utama
-      router.push("/");
+      router.push("/dashboard");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);

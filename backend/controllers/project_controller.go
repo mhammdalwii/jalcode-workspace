@@ -29,40 +29,43 @@ func CreateProject(c *gin.Context) {
 
 //  semua proyek beserta data anggota tim yang mengerjakannya
 func GetProjects(c *gin.Context) {
-    var projects []models.Project
-    if err := config.DB.Preload("TeamMember").Find(&projects).Error; err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data proyek"})
-        return 
-    }
+	var projects []models.Project
 
+	// 1. Tarik data dari DB beserta relasi Tim dan Klien
+	if err := config.DB.Preload("TeamMember").Preload("Client").Find(&projects).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data proyek"})
+		return
+	}
+	// (HAPUS c.JSON mentah dan tanda '}' nyasar yang sebelumnya ada di sini)
 
-    // array kosong dengan format DTO
-    var projectResponses []dto.ProjectResponse
+	// 2. Siapkan array kosong untuk DTO
+	var projectResponses []dto.ProjectResponse
 
-    // Lakukan perulangan (looping) untuk memindahkan data dari Database ke format DTO
-    for _, p := range projects {
-        pic := dto.TeamMemberResponse{
-            ID:    p.TeamMember.ID,
-            Name:  p.TeamMember.Name,
-            Role:  p.TeamMember.Role,
-            Email: p.TeamMember.Email,
-        }
+	// 3. Lakukan perulangan untuk memetakan data
+	for _, p := range projects {
+		pic := dto.TeamMemberResponse{
+			ID:    p.TeamMember.ID,
+			Name:  p.TeamMember.Name,
+			Role:  p.TeamMember.Role,
+			Email: p.TeamMember.Email,
+		}
 
-        projectResponse := dto.ProjectResponse{
-            ID:       p.ID,
-            Title:    p.Title,
-            Category: p.Category,
-            Status:   p.Status,
-            PIC:      pic, // <--- Perhatikan, key-nya sekarang bernama 'PIC'
-        }
+		projectResponse := dto.ProjectResponse{
+			ID:       p.ID,
+			Title:    p.Title,
+			Category: p.Category,
+			Status:   p.Status,
+			PIC:      pic,
+			Client:   p.Client, 
+		}
 
-        projectResponses = append(projectResponses, projectResponse)
-    }
+		projectResponses = append(projectResponses, projectResponse)
+	}
 
-    // Kirimkan array DTO yang sudah bersih ke frontend (Hanya ada SATU c.JSON di sini)
-    c.JSON(http.StatusOK, gin.H{
-        "data": projectResponses,
-    })
+	// 4. Kirimkan array DTO yang sudah bersih ke frontend (Hanya ada SATU c.JSON)
+	c.JSON(http.StatusOK, gin.H{
+		"data": projectResponses,
+	})
 }
 
 func UpdateProject(c *gin.Context) {
