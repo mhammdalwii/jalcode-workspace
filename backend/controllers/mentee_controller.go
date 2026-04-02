@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"jalcode-api/config"
+	"jalcode-api/dto"
 	"jalcode-api/models"
 	"net/http"
+
 	// "jalcode-api/config"
 	// "jalcode-api/models"
 	"github.com/gin-gonic/gin"
@@ -18,12 +20,38 @@ import (
 // @Router /api/mentees [get]
 func GetMentees(c *gin.Context) {
 	var mentees []models.Mentee
-	// Gunakan Preload untuk menarik data Mentor (TeamMember)
+
+	// Preload Mentor agar datanya ikut ditarik dari DB
 	if err := config.DB.Preload("Mentor").Find(&mentees).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data mentee"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"data": mentees})
+
+	var menteeResponses []dto.MenteeResponse
+
+	for _, m := range mentees {
+		// Siapkan DTO untuk Mentor jika ada
+		var mentorResp dto.TeamMemberResponse
+		if m.Mentor != nil {
+			mentorResp = dto.TeamMemberResponse{
+				ID:    m.Mentor.ID,
+				Name:  m.Mentor.Name,
+				Email: m.Mentor.Email,
+				Role:  m.Mentor.Role,
+			}
+		}
+
+		menteeResponses = append(menteeResponses, dto.MenteeResponse{
+			ID:      m.ID,
+			Name:    m.Name,
+			Email:   m.Email,
+			Program: m.Program,
+			Status:  m.Status,
+			Mentor:  mentorResp,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": menteeResponses})
 }
 
 // @Summary Tambah peserta didik baru
@@ -31,15 +59,23 @@ func GetMentees(c *gin.Context) {
 // @Tags Mentorship
 // @Accept json
 // @Produce json
-// @Param body body models.Mentee true "Data Mentee"
+// @Param body body dto.MenteeRequest true "Data Mentee"
 // @Success 200 {object} map[string]interface{}
 // @Security BearerAuth
 // @Router /api/mentees [post]
 func CreateMentee(c *gin.Context) {
-	var input models.Mentee
-	if err := c.ShouldBindJSON(&input); err != nil {
+	var req dto.MenteeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid: " + err.Error()})
 		return
+	}
+
+	input := models.Mentee{
+		Name:     req.Name,
+		Email:    req.Email,
+		Program:  req.Program,
+		Status:   req.Status,
+		MentorID: req.MentorID,
 	}
 
 	if err := config.DB.Create(&input).Error; err != nil {
@@ -55,7 +91,7 @@ func CreateMentee(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "ID Mentee"
-// @Param body body models.Mentee true "Data Update"
+// @Param body body dto.MenteeRequest true "Data Update"
 // @Success 200 {object} map[string]interface{}
 // @Security BearerAuth
 // @Router /api/mentees/{id} [put]
@@ -68,10 +104,17 @@ func UpdateMentee(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&mentee); err != nil {
+	var req dto.MenteeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid"})
 		return
 	}
+
+	mentee.Name = req.Name
+	mentee.Email = req.Email
+	mentee.Program = req.Program
+	mentee.Status = req.Status
+	mentee.MentorID = req.MentorID
 
 	config.DB.Save(&mentee)
 	c.JSON(http.StatusOK, gin.H{"message": "Data peserta didik berhasil diperbarui", "data": mentee})

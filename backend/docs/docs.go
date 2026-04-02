@@ -30,15 +30,12 @@ const docTemplate = `{
                 "summary": "Login pengguna",
                 "parameters": [
                     {
-                        "description": "Kredensial (email, password)",
+                        "description": "Data Login",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -55,7 +52,7 @@ const docTemplate = `{
         },
         "/api/auth/register": {
             "post": {
-                "description": "Mendaftarkan akun baru ke dalam sistem",
+                "description": "Mendaftarkan anggota tim baru ke dalam sistem",
                 "consumes": [
                     "application/json"
                 ],
@@ -65,15 +62,15 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Register pengguna / Tambah Tim",
+                "summary": "Register member baru",
                 "parameters": [
                     {
-                        "description": "Data Pendaftaran",
+                        "description": "Data Registrasi",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TeamMember"
+                            "$ref": "#/definitions/dto.RegisterRequest"
                         }
                     }
                 ],
@@ -119,7 +116,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Menyimpan data perusahaan/klien baru ke database",
+                "description": "Menambahkan data perusahaan klien ke database",
                 "consumes": [
                     "application/json"
                 ],
@@ -137,7 +134,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Client"
+                            "$ref": "#/definitions/dto.ClientRequest"
                         }
                     }
                 ],
@@ -179,12 +176,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Data Klien",
+                        "description": "Data Update",
                         "name": "body",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Client"
+                            "$ref": "#/definitions/dto.ClientRequest"
                         }
                     }
                 ],
@@ -204,7 +201,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Menghapus klien dari sistem",
+                "description": "Menghapus perusahaan klien dari database berdasarkan ID",
                 "produces": [
                     "application/json"
                 ],
@@ -281,7 +278,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Mentee"
+                            "$ref": "#/definitions/dto.MenteeRequest"
                         }
                     }
                 ],
@@ -328,7 +325,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Mentee"
+                            "$ref": "#/definitions/dto.MenteeRequest"
                         }
                     }
                 ],
@@ -376,6 +373,150 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/projects/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mendapatkan daftar semua proyek beserta PIC dan Klien",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Ambil semua data proyek",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menambahkan proyek dan menugaskannya ke anggota tim",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Tambah proyek baru",
+                "parameters": [
+                    {
+                        "description": "Data Proyek",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/projects/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui informasi proyek berdasarkan ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Update data proyek",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Proyek",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ProjectRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus proyek dari database berdasarkan ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Projects"
+                ],
+                "summary": "Hapus proyek",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Proyek",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/teams": {
             "post": {
                 "security": [
@@ -401,7 +542,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TeamMember"
+                            "$ref": "#/definitions/dto.TeamMemberRequest"
                         }
                     }
                 ],
@@ -474,10 +615,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/dto.TeamMemberRequest"
                         }
                     }
                 ],
@@ -527,7 +665,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.Client": {
+        "dto.ClientRequest": {
             "type": "object",
             "required": [
                 "company",
@@ -540,52 +678,43 @@ const docTemplate = `{
                 "company": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "phone": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
                 },
-                "projects": {
-                    "description": "Relasi One-to-Many",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Project"
-                    }
-                },
-                "updated_at": {
+                "password": {
                     "type": "string"
                 }
             }
         },
-        "models.Mentee": {
+        "dto.MenteeRequest": {
             "type": "object",
             "required": [
+                "mentor_id",
                 "name",
                 "program",
                 "status"
             ],
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "mentor": {
-                    "$ref": "#/definitions/models.TeamMember"
                 },
                 "mentor_id": {
                     "type": "integer"
@@ -598,13 +727,10 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
-        "models.Project": {
+        "dto.ProjectRequest": {
             "type": "object",
             "required": [
                 "category",
@@ -616,36 +742,45 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
-                "client": {
-                    "$ref": "#/definitions/models.Client"
-                },
                 "client_id": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
                     "type": "integer"
                 },
                 "status": {
                     "type": "string"
-                },
-                "team_member": {
-                    "$ref": "#/definitions/models.TeamMember"
                 },
                 "team_member_id": {
                     "type": "integer"
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.RegisterRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "name",
+                "password",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
                 },
-                "updated_at": {
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "role": {
                     "type": "string"
                 }
             }
         },
-        "models.TeamMember": {
+        "dto.TeamMemberRequest": {
             "type": "object",
             "required": [
                 "email",
@@ -653,28 +788,16 @@ const docTemplate = `{
                 "role"
             ],
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
-                "projects": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.Project"
-                    }
-                },
-                "role": {
+                "password": {
                     "type": "string"
                 },
-                "updated_at": {
+                "role": {
                     "type": "string"
                 }
             }

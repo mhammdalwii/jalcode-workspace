@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"jalcode-api/config"
+	"jalcode-api/dto"
 	"jalcode-api/models"
 	"net/http"
 
@@ -18,14 +19,28 @@ import (
 // @Security BearerAuth
 // @Router /api/teams/ [get]
 // Mengambil semua data anggota tim
-func GetTeamMembers(c *gin.Context) {
+func GetTeams(c *gin.Context) {
 	var teams []models.TeamMember
-	// GORM otomatis melakukan "SELECT * FROM team_members"
-	config.DB.Find(&teams)
 
-	c.JSON(http.StatusOK, gin.H{
-		"data": teams,
-	})
+	if err := config.DB.Find(&teams).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data tim"})
+		return
+	}
+
+	// Siapkan array kosong untuk DTO
+	var teamResponses []dto.TeamMemberResponse
+
+	// Looping untuk memindahkan data dari DB ke DTO
+	for _, t := range teams {
+		teamResponses = append(teamResponses, dto.TeamMemberResponse{
+			ID:    t.ID,
+			Name:  t.Name,
+			Email: t.Email,
+			Role:  t.Role,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": teamResponses})
 }
 
 // @Summary Menambahkan anggota tim baru
@@ -33,26 +48,30 @@ func GetTeamMembers(c *gin.Context) {
 // @Tags Teams
 // @Accept json
 // @Produce json
-// @Param body body models.TeamMember true "Data Anggota Tim"
+// @Param body body dto.TeamMemberRequest true "Data Anggota Tim"
 // @Success 200 {object} map[string]interface{}
 // @Security BearerAuth
 // @Router /api/teams [post]
 func CreateTeamMember(c *gin.Context) {
-	var input models.TeamMember
-
-	// Validasi JSON yang dikirim client 
-	if err := c.ShouldBindJSON(&input); err != nil {
+	var req dto.TeamMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Simpan ke database
-	config.DB.Create(&input)
+	// Hash password sebelum simpan
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Anggota tim berhasil ditambahkan!",
-		"data":    input,
-	})
+	input := models.TeamMember{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Role:     req.Role,
+	}
+
+	config.DB.Create(&input)
+	input.Password = "" // Sembunyikan saat return JSON
+	c.JSON(http.StatusCreated, gin.H{"message": "Anggota tim berhasil ditambahkan!", "data": input})
 }
 
 // @Summary Mengedit data anggota tim
@@ -61,7 +80,7 @@ func CreateTeamMember(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "ID Anggota Tim"
-// @Param body body map[string]string true "Data Update"
+// @Param body body dto.TeamMemberRequest true "Data Update"
 // @Success 200 {object} map[string]interface{}
 // @Security BearerAuth
 // @Router /api/teams/{id} [put]
@@ -69,46 +88,30 @@ func UpdateTeamMember(c *gin.Context) {
 	id := c.Param("id")
 	var team models.TeamMember
 
-	// Cek apakah anggota tim ada di database
 	if err := config.DB.First(&team, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tim tidak ditemukan"})
 		return
 	}
 
-	// Struct khusus untuk menangkap inputan (karena password sifatnya opsional saat edit)
-	var input struct {
-		Name     string `json:"name"`
-		Role     string `json:"role"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	if err := c.ShouldBindJSON(&input); err != nil {
+	var req dto.TeamMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid"})
 		return
 	}
 
-	// Timpa data lama dengan data baru
-	team.Name = input.Name
-	team.Role = input.Role
-	team.Email = input.Email
+	team.Name = req.Name
+	team.Role = req.Role
+	team.Email = req.Email
 
-	// Jika input password TIDAK kosong, berarti user ingin ganti password
-	if input.Password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
+	if req.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 		if err == nil {
 			team.Password = string(hashedPassword)
 		}
 	}
 
-	// Simpan perubahan ke database
-	if err := config.DB.Save(&team).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui data anggota"})
-		return
-	}
-
-	// Jangan kembalikan password yang sudah di-hash ke frontend untuk keamanan
-	team.Password = "" 
+	config.DB.Save(&team)
+	team.Password = ""
 	c.JSON(http.StatusOK, gin.H{"message": "Data anggota berhasil diperbarui", "data": team})
 }
 

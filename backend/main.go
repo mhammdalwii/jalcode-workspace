@@ -62,7 +62,11 @@ func main() {
 	routes.SetupAuthRoutes(r)
 	routes.SetupClientRoutes(r)
 	routes.SetupMenteeRoutes(r)
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	r.GET("/api/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/api/docs/index.html")
+	})
 
 	//  server di port 8080
 	r.Run(":8080")
