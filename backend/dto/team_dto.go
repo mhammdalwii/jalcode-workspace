@@ -6,3 +6,10 @@ type TeamMemberResponse struct {
 	Email string `json:"email"`
 	Role  string `json:"role"`
 }
+
+type TeamMemberRequest struct {
+	Name     string `json:"name" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password"`
+	Role     string `json:"role" binding:"required"`
+}

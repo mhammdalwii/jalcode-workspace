@@ -11,3 +11,11 @@ type ProjectResponse struct {
 	PIC        TeamMemberResponse `json:"pic"` 
 	Client   *models.Client     `json:"client,omitempty"`
 } 
+
+type ProjectRequest struct {
+	Title        string `json:"title" binding:"required"`
+	Category     string `json:"category" binding:"required"`
+	Status       string `json:"status" binding:"required"`
+	TeamMemberID uint   `json:"team_member_id" binding:"required"`
+	ClientID     *uint  `json:"client_id"` 
+}

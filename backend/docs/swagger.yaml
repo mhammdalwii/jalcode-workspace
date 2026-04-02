@@ -1,42 +1,35 @@
 basePath: /
 definitions:
-  models.Client:
+  dto.ClientRequest:
     properties:
       address:
         type: string
       company:
         type: string
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
       name:
         type: string
       phone:
-        type: string
-      projects:
-        description: Relasi One-to-Many
-        items:
-          $ref: '#/definitions/models.Project'
-        type: array
-      updated_at:
         type: string
     required:
     - company
     - name
     type: object
-  models.Mentee:
+  dto.LoginRequest:
     properties:
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
-      mentor:
-        $ref: '#/definitions/models.TeamMember'
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.MenteeRequest:
+    properties:
+      email:
+        type: string
       mentor_id:
         type: integer
       name:
@@ -45,34 +38,23 @@ definitions:
         type: string
       status:
         type: string
-      updated_at:
-        type: string
     required:
+    - mentor_id
     - name
     - program
     - status
     type: object
-  models.Project:
+  dto.ProjectRequest:
     properties:
       category:
         type: string
-      client:
-        $ref: '#/definitions/models.Client'
       client_id:
-        type: integer
-      created_at:
-        type: string
-      id:
         type: integer
       status:
         type: string
-      team_member:
-        $ref: '#/definitions/models.TeamMember'
       team_member_id:
         type: integer
       title:
-        type: string
-      updated_at:
         type: string
     required:
     - category
@@ -80,23 +62,32 @@ definitions:
     - team_member_id
     - title
     type: object
-  models.TeamMember:
+  dto.RegisterRequest:
     properties:
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
       name:
         type: string
-      projects:
-        items:
-          $ref: '#/definitions/models.Project'
-        type: array
+      password:
+        minLength: 6
+        type: string
       role:
         type: string
-      updated_at:
+    required:
+    - email
+    - name
+    - password
+    - role
+    type: object
+  dto.TeamMemberRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      role:
         type: string
     required:
     - email
@@ -117,14 +108,12 @@ paths:
       description: Melakukan autentikasi menggunakan email dan password untuk mendapatkan
         token JWT
       parameters:
-      - description: Kredensial (email, password)
+      - description: Data Login
         in: body
         name: body
         required: true
         schema:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/dto.LoginRequest'
       produces:
       - application/json
       responses:
@@ -140,14 +129,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Mendaftarkan akun baru ke dalam sistem
+      description: Mendaftarkan anggota tim baru ke dalam sistem
       parameters:
-      - description: Data Pendaftaran
+      - description: Data Registrasi
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.TeamMember'
+          $ref: '#/definitions/dto.RegisterRequest'
       produces:
       - application/json
       responses:
@@ -156,7 +145,7 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Register pengguna / Tambah Tim
+      summary: Register member baru
       tags:
       - Auth
   /api/clients:
@@ -178,14 +167,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Menyimpan data perusahaan/klien baru ke database
+      description: Menambahkan data perusahaan klien ke database
       parameters:
       - description: Data Klien
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Client'
+          $ref: '#/definitions/dto.ClientRequest'
       produces:
       - application/json
       responses:
@@ -201,7 +190,7 @@ paths:
       - Clients
   /api/clients/{id}:
     delete:
-      description: Menghapus klien dari sistem
+      description: Menghapus perusahaan klien dari database berdasarkan ID
       parameters:
       - description: ID Klien
         in: path
@@ -231,12 +220,12 @@ paths:
         name: id
         required: true
         type: string
-      - description: Data Klien
+      - description: Data Update
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Client'
+          $ref: '#/definitions/dto.ClientRequest'
       produces:
       - application/json
       responses:
@@ -276,7 +265,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Mentee'
+          $ref: '#/definitions/dto.MenteeRequest'
       produces:
       - application/json
       responses:
@@ -327,7 +316,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.Mentee'
+          $ref: '#/definitions/dto.MenteeRequest'
       produces:
       - application/json
       responses:
@@ -341,6 +330,97 @@ paths:
       summary: Update data peserta didik
       tags:
       - Mentorship
+  /api/projects/:
+    get:
+      description: Mendapatkan daftar semua proyek beserta PIC dan Klien
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil semua data proyek
+      tags:
+      - Projects
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan proyek dan menugaskannya ke anggota tim
+      parameters:
+      - description: Data Proyek
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah proyek baru
+      tags:
+      - Projects
+  /api/projects/{id}:
+    delete:
+      description: Menghapus proyek dari database berdasarkan ID
+      parameters:
+      - description: ID Proyek
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus proyek
+      tags:
+      - Projects
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi proyek berdasarkan ID
+      parameters:
+      - description: ID Proyek
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ProjectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update data proyek
+      tags:
+      - Projects
   /api/teams:
     post:
       consumes:
@@ -352,7 +432,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/models.TeamMember'
+          $ref: '#/definitions/dto.TeamMemberRequest'
       produces:
       - application/json
       responses:
@@ -420,9 +500,7 @@ paths:
         name: body
         required: true
         schema:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/dto.TeamMemberRequest'
       produces:
       - application/json
       responses:

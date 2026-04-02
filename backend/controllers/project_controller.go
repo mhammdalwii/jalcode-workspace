@@ -9,25 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Menambahkan proyek baru dan menugaskannya ke anggota tim
-func CreateProject(c *gin.Context) {
-	var input models.Project
-
-	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	//  proyek ke database
-	config.DB.Create(&input)
-
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Proyek berhasil ditambahkan!",
-		"data":    input,
-	})
-}
-
-//  semua proyek beserta data anggota tim yang mengerjakannya
+// @Summary Ambil semua data proyek
+// @Description Mendapatkan daftar semua proyek beserta PIC dan Klien
+// @Tags Projects
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/projects/ [get]
 func GetProjects(c *gin.Context) {
 	var projects []models.Project
 
@@ -38,10 +26,10 @@ func GetProjects(c *gin.Context) {
 	}
 	// (HAPUS c.JSON mentah dan tanda '}' nyasar yang sebelumnya ada di sini)
 
-	// 2. Siapkan array kosong untuk DTO
+	//  array kosong untuk DTO
 	var projectResponses []dto.ProjectResponse
 
-	// 3. Lakukan perulangan untuk memetakan data
+	//  perulangan untuk memetakan data
 	for _, p := range projects {
 		pic := dto.TeamMemberResponse{
 			ID:    p.TeamMember.ID,
@@ -68,50 +56,88 @@ func GetProjects(c *gin.Context) {
 	})
 }
 
-func UpdateProject(c *gin.Context) {
-	id := c.Param("id")
-	var project models.Project
-
-	// Cari proyek berdasarkan ID
-	if err := config.DB.First(&project, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Proyek tidak ditemukan!"})
-		return
-	}
-
-	// Tangkap data perubahan dari client
-	var input models.Project
-	if err := c.ShouldBindJSON(&input); err != nil {
+// @Summary Tambah proyek baru
+// @Description Menambahkan proyek dan menugaskannya ke anggota tim
+// @Tags Projects
+// @Accept json
+// @Produce json
+// @Param body body dto.ProjectRequest true "Data Proyek"
+// @Success 201 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/projects/ [post]
+func CreateProject(c *gin.Context) {
+	var req dto.ProjectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Lakukan update ke database
-	config.DB.Model(&project).Updates(input)
+	input := models.Project{
+		Title:        req.Title,
+		Category:     req.Category,
+		Status:       req.Status,
+		TeamMemberID: req.TeamMemberID,
+		ClientID:     req.ClientID,
+	}
 
-	// Ambil ulang data proyek yang sudah diupdate beserta data timnya (Preload)
-	// agar response JSON tetap lengkap
-	config.DB.Preload("TeamMember").First(&project, id)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Data proyek berhasil diperbarui!",
-		"data":    project,
-	})
+	config.DB.Create(&input)
+	c.JSON(http.StatusCreated, gin.H{"message": "Proyek berhasil ditambahkan!", "data": input})
 }
 
-func DeleteProject(c *gin.Context) {
+// @Summary Update data proyek
+// @Description Memperbarui informasi proyek berdasarkan ID
+// @Tags Projects
+// @Accept json
+// @Produce json
+// @Param id path string true "ID Proyek"
+// @Param body body dto.ProjectRequest true "Data Update"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/projects/{id} [put]
+func UpdateProject(c *gin.Context) {
 	id := c.Param("id")
 	var project models.Project
 
-	// Cari proyek terlebih dahulu
 	if err := config.DB.First(&project, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Proyek tidak ditemukan!"})
 		return
 	}
 
-	// Hapus proyek dari database
-	config.DB.Delete(&project)
+	var req dto.ProjectRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Proyek berhasil dihapus dari sistem!",
-	})
+	project.Title = req.Title
+	project.Category = req.Category
+	project.Status = req.Status
+	project.TeamMemberID = req.TeamMemberID
+	project.ClientID = req.ClientID
+
+	config.DB.Save(&project)
+	config.DB.Preload("TeamMember").Preload("Client").First(&project, id)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
+}
+
+// @Summary Hapus proyek
+// @Description Menghapus proyek dari database berdasarkan ID
+// @Tags Projects
+// @Produce json
+// @Param id path string true "ID Proyek"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/projects/{id} [delete]
+func DeleteProject(c *gin.Context) {
+	id := c.Param("id")
+	var project models.Project
+
+	if err := config.DB.First(&project, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Proyek tidak ditemukan!"})
+		return
+	}
+
+	config.DB.Delete(&project)
+	c.JSON(http.StatusOK, gin.H{"message": "Proyek berhasil dihapus dari sistem!"})
 }
