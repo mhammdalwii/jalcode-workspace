@@ -4,6 +4,8 @@ import (
 	"jalcode-api/config"
 	"jalcode-api/models"
 	"jalcode-api/routes"
+	"jalcode-api/seeders"
+	"log"
 	"net/http"
 	"time"
 
@@ -37,7 +39,10 @@ func main() {
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
 	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{})
-	
+
+	if err := seeders.SeedTeamMembers(); err != nil {
+		log.Println("Gagal melakukan seeding user:", err)
+	}
 
 	r := gin.Default()
 
@@ -49,7 +54,7 @@ func main() {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour, 
+		MaxAge:           12 * time.Hour,
 	}))
 
 	r.GET("/api/ping", func(c *gin.Context) {
