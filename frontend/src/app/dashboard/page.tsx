@@ -267,10 +267,12 @@ export default function DashboardPage() {
         </div>
 
         <StatCards
-          totalTeams={teams.length}
           totalProjects={projects?.length || 0}
-          activeProjects={projects?.filter((p) => p.status !== "Selesai").length || 0}
-          completedProjects={projects?.filter((p) => p.status === "Selesai").length || 0}
+          activeProjects={projects?.filter((p) => p.status === "Proses" || p.status === "Antrean").length || 0}
+          totalClients={clients?.length || 0}
+          totalTeams={teams?.length || 0}
+          totalMentees={mentees?.length || 0}
+          graduatedMentees={mentees?.filter((m) => m.status === "Lulus").length || 0}
         />
 
         {/* TAB NAVIGASI */}
