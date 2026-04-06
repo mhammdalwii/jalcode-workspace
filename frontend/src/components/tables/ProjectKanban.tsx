@@ -7,6 +7,7 @@ interface ProjectKanbanProps {
   onDelete: (id: number) => void;
   onStatusChange: (projectId: number, newStatus: string) => void;
   onOpenDetail: (project: Project) => void;
+  isAdmin?: boolean;
 }
 
 const COLUMNS = [
@@ -16,7 +17,7 @@ const COLUMNS = [
   { id: "Selesai", label: "Selesai", icon: <CheckCircle size={16} className="text-green-500" />, bg: "bg-green-50", border: "border-green-200" },
 ];
 
-export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChange, onOpenDetail }: ProjectKanbanProps) {
+export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChange, onOpenDetail, isAdmin }: ProjectKanbanProps) {
   // Fungsi saat kartu mulai ditarik
   const handleDragStart = (e: React.DragEvent, projectId: number) => {
     e.dataTransfer.setData("projectId", projectId.toString());
@@ -65,14 +66,16 @@ export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChan
                   {/* Kategori & Tombol Aksi */}
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded">{p.category}</span>
-                    <div className="opacity-0 group-hover:opacity-100 transition flex gap-2">
-                      <button onClick={() => onEdit(p)} className="text-gray-400 hover:text-blue-600">
-                        <Edit size={14} />
-                      </button>
-                      <button onClick={() => onDelete(p.id)} className="text-gray-400 hover:text-red-600">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {isAdmin && (
+                      <div className="opacity-0 group-hover:opacity-100 transition flex gap-2">
+                        <button onClick={() => onEdit(p)} className="text-gray-400 hover:text-blue-600">
+                          <Edit size={14} />
+                        </button>
+                        <button onClick={() => onDelete(p.id)} className="text-gray-400 hover:text-red-600">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Judul Proyek */}

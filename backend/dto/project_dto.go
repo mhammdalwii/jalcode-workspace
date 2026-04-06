@@ -11,6 +11,7 @@ type ProjectResponse struct {
 	PIC        TeamMemberResponse `json:"pic"` 
 	Client   *models.Client     `json:"client,omitempty"`
 	Tasks    []TaskResponse     `json:"tasks"`
+	Attachments []AttachmentResponse `json:"attachments"`
 } 
 
 type ProjectRequest struct {

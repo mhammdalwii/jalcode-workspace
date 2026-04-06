@@ -5,9 +5,10 @@ interface ClientTableProps {
   clients: Client[];
   onEdit: (client: Client) => void;
   onDelete: (id: number) => void;
+  isAdmin?: boolean;
 }
 
-export default function ClientTable({ clients, onEdit, onDelete }: ClientTableProps) {
+export default function ClientTable({ clients, onEdit, onDelete, isAdmin }: ClientTableProps) {
   if (!clients || clients.length === 0) {
     return <div className="p-8 text-center text-gray-500">Belum ada data klien yang tersimpan.</div>;
   }
@@ -20,7 +21,7 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
             <th className="p-4 border-b font-medium">Perusahaan</th>
             <th className="p-4 border-b font-medium">PIC (Kontak)</th>
             <th className="p-4 border-b font-medium">Email & Telepon</th>
-            <th className="p-4 border-b font-medium text-right">Aksi</th>
+            {isAdmin && <th className="p-4 border-b font-medium text-right">Aksi</th>}
           </tr>
         </thead>
         <tbody>
@@ -45,14 +46,16 @@ export default function ClientTable({ clients, onEdit, onDelete }: ClientTablePr
                 </div>
               </td>
               <td className="p-4 text-right">
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800">
-                    <Edit size={18} />
-                  </button>
-                  <button onClick={() => onDelete(c.id)} className="text-red-600 hover:text-red-800">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="flex justify-end gap-3">
+                    <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800">
+                      <Edit size={18} />
+                    </button>
+                    <button onClick={() => onDelete(c.id)} className="text-red-600 hover:text-red-800">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}

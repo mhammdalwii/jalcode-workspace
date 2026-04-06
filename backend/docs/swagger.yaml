@@ -116,6 +116,27 @@ info:
   title: Jalcode API Documentation
   version: "1.0"
 paths:
+  /api/attachments/{id}:
+    delete:
+      parameters:
+      - description: ID Attachment
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus file lampiran
+      tags:
+      - Attachments
   /api/auth/login:
     post:
       consumes:
@@ -347,7 +368,8 @@ paths:
       - Mentorship
   /api/projects/:
     get:
-      description: Mendapatkan daftar semua proyek beserta PIC dan Klien
+      description: Mendapatkan daftar semua proyek beserta PIC, Klien, Tugas, dan
+        Lampiran
       produces:
       - application/json
       responses:
@@ -436,6 +458,35 @@ paths:
       summary: Update data proyek
       tags:
       - Projects
+  /api/projects/{id}/attachments:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Mengunggah file lampiran untuk proyek tertentu
+      parameters:
+      - description: ID Proyek
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: File Upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Upload file ke proyek
+      tags:
+      - Attachments
   /api/tasks/:
     post:
       consumes:

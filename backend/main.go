@@ -26,10 +26,11 @@ import (
 func main() {
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{})
 	
 
 	r := gin.Default()
+	r.Static("/uploads", "./uploads")
 
 	r.Use(cors.New(cors.Config{
 		//  frontend Next.js/React yang biasanya jalan di port 3000

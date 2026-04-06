@@ -13,6 +13,7 @@ type Project struct {
 	ClientID  *uint   `json:"client_id"` 
 	Client    *Client `json:"client,omitempty" gorm:"foreignKey:ClientID" binding:"-"`
 	Tasks []Task `json:"tasks" gorm:"foreignKey:ProjectID"`
+	Attachments []Attachment `json:"attachments" gorm:"foreignKey:ProjectID"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
