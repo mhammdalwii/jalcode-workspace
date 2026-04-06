@@ -12,8 +12,8 @@ func SetupTeamRoutes(r *gin.Engine) {
 	teamGroup := r.Group("/api/teams", middleware.RequireAuth)
 	{
 		teamGroup.GET("/", controllers.GetTeams)
-		teamGroup.POST("/", controllers.CreateTeamMember)
-		teamGroup.PUT("/:id", controllers.UpdateTeamMember)
-		teamGroup.DELETE("/:id", controllers.DeleteTeamMember)
+		teamGroup.POST("/", middleware.RequireAdmin, controllers.CreateTeamMember)
+		teamGroup.PUT("/:id", middleware.RequireAdmin, controllers.UpdateTeamMember)
+		teamGroup.DELETE("/:id", middleware.RequireAdmin, controllers.DeleteTeamMember)
 	}
 }

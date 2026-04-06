@@ -5,16 +5,17 @@ import (
 	"jalcode-api/middleware"
 
 	"github.com/gin-gonic/gin"
-	// "jalcode-api/controllers"
-	// "jalcode-api/middleware"
 )
 
 func SetupMenteeRoutes(r *gin.Engine) {
 	menteeGroup := r.Group("/api/mentees", middleware.RequireAuth)
 	{
-		menteeGroup.GET("/", controllers.GetMentees)
-		menteeGroup.POST("/", controllers.CreateMentee)
-		menteeGroup.PUT("/:id", controllers.UpdateMentee)
-		menteeGroup.DELETE("/:id", controllers.DeleteMentee)
+		// Semua anggota tim bisa melihat daftar mentee
+		menteeGroup.GET("/", controllers.GetMentees) 
+		
+		// Hanya Admin/Founder yang bisa kelola data mentee
+		menteeGroup.POST("/", middleware.RequireAdmin, controllers.CreateMentee)
+		menteeGroup.PUT("/:id", middleware.RequireAdmin, controllers.UpdateMentee)
+		menteeGroup.DELETE("/:id", middleware.RequireAdmin, controllers.DeleteMentee)
 	}
 }

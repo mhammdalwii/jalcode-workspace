@@ -15,6 +15,7 @@ export interface Project {
   pic?: TeamMember;
   client?: Client;
   tasks?: Task[];
+  attachments?: Attachment[];
 }
 
 export interface Client {
@@ -45,4 +46,13 @@ export interface Task {
   project_id: number;
   title: string;
   is_done: boolean;
+}
+
+export interface Attachment {
+  id: number;
+  project_id: number;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  created_at: string;
 }

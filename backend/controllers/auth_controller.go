@@ -27,12 +27,18 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
+		return
+	}
+
 	//  data dari DTO ke Model
 
 	user := models.TeamMember{
 		Name:     req.Name,
 		Email:    req.Email,
-		Password: req.Password, 
+		Password: string(hashedPassword),
 		Role:     req.Role,
 	}
 

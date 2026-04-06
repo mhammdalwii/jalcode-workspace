@@ -10,7 +10,7 @@ import (
 )
 
 // @Summary Ambil semua data proyek
-// @Description Mendapatkan daftar semua proyek beserta PIC dan Klien
+// @Description Mendapatkan daftar semua proyek beserta PIC, Klien, Tugas, dan Lampiran
 // @Tags Projects
 // @Produce json
 // @Success 200 {object} map[string]interface{}
@@ -19,20 +19,16 @@ import (
 func GetProjects(c *gin.Context) {
 	var projects []models.Project
 
-	//  data dari DB beserta relasi Tim dan Klien
-	if err := config.DB.Preload("TeamMember").Preload("Client").Preload("Tasks").Find(&projects).Error; err != nil {
+	//   data dari DB beserta relasi Tim, Klien, Tasks, dan Attachments
+	if err := config.DB.Preload("TeamMember").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data proyek"})
 		return
 	}
-	// (HAPUS c.JSON mentah dan tanda '}' nyasar yang sebelumnya ada di sini)
 
-
-	
-	//  array kosong untuk DTO
+	//  array kosong untuk DTO hasil akhir
 	var projectResponses []dto.ProjectResponse
-	var taskResponses []dto.TaskResponse
 
-	//  perulangan untuk memetakan data
+	//  Perulangan untuk memetakan data
 	for _, p := range projects {
 		pic := dto.TeamMemberResponse{
 			ID:    p.TeamMember.ID,
@@ -41,6 +37,7 @@ func GetProjects(c *gin.Context) {
 			Email: p.TeamMember.Email,
 		}
 
+		var taskResponses []dto.TaskResponse
 		for _, t := range p.Tasks {
 			taskResponses = append(taskResponses, dto.TaskResponse{
 				ID:        t.ID,
@@ -50,20 +47,33 @@ func GetProjects(c *gin.Context) {
 			})
 		}
 
+		var attachmentResponses []dto.AttachmentResponse
+		for _, a := range p.Attachments {
+			attachmentResponses = append(attachmentResponses, dto.AttachmentResponse{
+				ID:        a.ID,
+				ProjectID: a.ProjectID,
+				FileName:  a.FileName,
+				FileURL:   a.FileURL,
+				FileType:  a.FileType,
+				CreatedAt: a.CreatedAt,
+			})
+		}
+
 		projectResponse := dto.ProjectResponse{
-			ID:       p.ID,
-			Title:    p.Title,
-			Category: p.Category,
-			Status:   p.Status,
-			PIC:      pic,
-			Client:   p.Client,
-			Tasks:    taskResponses, 
+			ID:          p.ID,
+			Title:       p.Title,
+			Category:    p.Category,
+			Status:      p.Status,
+			PIC:         pic,
+			Client:      p.Client,
+			Tasks:       taskResponses,
+			Attachments: attachmentResponses,
 		}
 
 		projectResponses = append(projectResponses, projectResponse)
 	}
 
-	// 4. Kirimkan array DTO yang sudah bersih ke frontend (Hanya ada SATU c.JSON)
+	//  array DTO yang sudah bersih ke frontend
 	c.JSON(http.StatusOK, gin.H{
 		"data": projectResponses,
 	})

@@ -5,9 +5,10 @@ interface MenteeTableProps {
   mentees: Mentee[];
   onEdit: (mentee: Mentee) => void;
   onDelete: (id: number) => void;
+  isAdmin?: boolean;
 }
 
-export default function MenteeTable({ mentees, onEdit, onDelete }: MenteeTableProps) {
+export default function MenteeTable({ mentees, onEdit, onDelete, isAdmin }: MenteeTableProps) {
   if (!mentees || mentees.length === 0) {
     return <div className="p-8 text-center text-gray-500">Belum ada data peserta didik.</div>;
   }
@@ -21,7 +22,7 @@ export default function MenteeTable({ mentees, onEdit, onDelete }: MenteeTablePr
             <th className="p-4 border-b font-medium">Program Studi</th>
             <th className="p-4 border-b font-medium">Status</th>
             <th className="p-4 border-b font-medium">Mentor</th>
-            <th className="p-4 border-b font-medium text-right">Aksi</th>
+            {isAdmin && <th className="p-4 border-b font-medium text-right">Aksi</th>}
           </tr>
         </thead>
         <tbody>
@@ -45,14 +46,16 @@ export default function MenteeTable({ mentees, onEdit, onDelete }: MenteeTablePr
                 {m.mentor?.name || "-"}
               </td>
               <td className="p-4 text-right">
-                <div className="flex justify-end gap-3">
-                  <button onClick={() => onEdit(m)} className="text-blue-600 hover:text-blue-800">
-                    <Edit size={18} />
-                  </button>
-                  <button onClick={() => onDelete(m.id)} className="text-red-600 hover:text-red-800">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="flex justify-end gap-3">
+                    <button onClick={() => onEdit(m)} className="text-blue-600 hover:text-blue-800">
+                      <Edit size={18} />
+                    </button>
+                    <button onClick={() => onDelete(m.id)} className="text-red-600 hover:text-red-800">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                )}
               </td>
             </tr>
           ))}

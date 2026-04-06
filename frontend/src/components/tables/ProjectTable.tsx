@@ -5,9 +5,10 @@ interface ProjectTableProps {
   projects: Project[];
   onEdit: (project: Project) => void;
   onDelete: (id: number) => void;
+  isAdmin?: boolean;
 }
 
-export default function ProjectTable({ projects, onEdit, onDelete }: ProjectTableProps) {
+export default function ProjectTable({ projects, onEdit, onDelete, isAdmin }: ProjectTableProps) {
   // Jika hasil filter kosong
   if (!projects || projects.length === 0) {
     return <div className="p-8 text-center text-gray-500">Belum ada proyek yang sesuai dengan pencarian.</div>;
@@ -22,7 +23,7 @@ export default function ProjectTable({ projects, onEdit, onDelete }: ProjectTabl
             <th className="p-4 border-b font-medium">Kategori</th>
             <th className="p-4 border-b font-medium">Status</th>
             <th className="p-4 border-b font-medium">PIC</th>
-            <th className="p-4 border-b font-medium text-right">Aksi</th>
+            {isAdmin && <th className="p-4 border-b font-medium text-right">Aksi</th>}
           </tr>
         </thead>
         <tbody>
@@ -36,14 +37,16 @@ export default function ProjectTable({ projects, onEdit, onDelete }: ProjectTabl
                 </span>
               </td>
               <td className="p-4 text-gray-600">{p.pic?.name || "-"}</td>
-              <td className="p-4 text-right flex justify-end gap-3">
-                <button onClick={() => onEdit(p)} className="text-blue-600 hover:text-blue-800">
-                  <Edit size={18} />
-                </button>
-                <button onClick={() => onDelete(p.id)} className="text-red-600 hover:text-red-800">
-                  <Trash2 size={18} />
-                </button>
-              </td>
+              {isAdmin && (
+                <td className="p-4 text-right flex justify-end gap-3">
+                  <button onClick={() => onEdit(p)} className="text-blue-600 hover:text-blue-800">
+                    <Edit size={18} />
+                  </button>
+                  <button onClick={() => onDelete(p.id)} className="text-red-600 hover:text-red-800">
+                    <Trash2 size={18} />
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
