@@ -6,6 +6,7 @@ interface ProjectKanbanProps {
   onEdit: (project: Project) => void;
   onDelete: (id: number) => void;
   onStatusChange: (projectId: number, newStatus: string) => void;
+  onOpenDetail: (project: Project) => void;
 }
 
 const COLUMNS = [
@@ -15,7 +16,7 @@ const COLUMNS = [
   { id: "Selesai", label: "Selesai", icon: <CheckCircle size={16} className="text-green-500" />, bg: "bg-green-50", border: "border-green-200" },
 ];
 
-export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChange }: ProjectKanbanProps) {
+export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChange, onOpenDetail }: ProjectKanbanProps) {
   // Fungsi saat kartu mulai ditarik
   const handleDragStart = (e: React.DragEvent, projectId: number) => {
     e.dataTransfer.setData("projectId", projectId.toString());
@@ -54,7 +55,13 @@ export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChan
             {/* Daftar Kartu */}
             <div className="flex flex-col gap-3 min-h-37.5">
               {columnProjects.map((p) => (
-                <div key={p.id} draggable onDragStart={(e) => handleDragStart(e, p.id)} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition group">
+                <div
+                  key={p.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, p.id)}
+                  onClick={() => onOpenDetail(p)}
+                  className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 cursor-grab active:cursor-grabbing hover:shadow-md transition group"
+                >
                   {/* Kategori & Tombol Aksi */}
                   <div className="flex justify-between items-start mb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-1 rounded">{p.category}</span>

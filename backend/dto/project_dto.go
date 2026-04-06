@@ -10,6 +10,7 @@ type ProjectResponse struct {
 	Status     string             `json:"status"`
 	PIC        TeamMemberResponse `json:"pic"` 
 	Client   *models.Client     `json:"client,omitempty"`
+	Tasks    []TaskResponse     `json:"tasks"`
 } 
 
 type ProjectRequest struct {

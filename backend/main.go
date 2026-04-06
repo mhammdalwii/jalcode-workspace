@@ -24,19 +24,9 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	// // Inisialisasi router Gin
-	// r := gin.Default()
-
-	// // Buat satu endpoint GET sederhana
-	// r.GET("/api/ping", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, gin.H{
-	// 		"message": "Halo! Server Go-mu sudah berjalan dengan lancar 🚀",
-	// 	})
-	// })
-
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{})
 	
 
 	r := gin.Default()
@@ -45,7 +35,7 @@ func main() {
 		//  frontend Next.js/React yang biasanya jalan di port 3000
 		// Jika nanti sudah deploy, ganti dengan domain aslimu (misal: "https://jalcode.com")
 		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
@@ -62,6 +52,7 @@ func main() {
 	routes.SetupAuthRoutes(r)
 	routes.SetupClientRoutes(r)
 	routes.SetupMenteeRoutes(r)
+	routes.SetupTaskRoutes(r)
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs", func(c *gin.Context) {
