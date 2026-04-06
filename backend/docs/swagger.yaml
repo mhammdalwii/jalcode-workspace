@@ -79,6 +79,21 @@ definitions:
     - password
     - role
     type: object
+  dto.TaskRequest:
+    properties:
+      project_id:
+        type: integer
+      title:
+        type: string
+    required:
+    - project_id
+    - title
+    type: object
+  dto.TaskStatusRequest:
+    properties:
+      is_done:
+        type: boolean
+    type: object
   dto.TeamMemberRequest:
     properties:
       email:
@@ -421,6 +436,83 @@ paths:
       summary: Update data proyek
       tags:
       - Projects
+  /api/tasks/:
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan to-do list ke dalam proyek tertentu
+      parameters:
+      - description: Data Tugas
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah tugas baru ke proyek
+      tags:
+      - Tasks
+  /api/tasks/{id}:
+    delete:
+      description: Menghapus tugas dari to-do list
+      parameters:
+      - description: ID Tugas
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus tugas
+      tags:
+      - Tasks
+  /api/tasks/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Mengubah status tugas menjadi selesai (true) atau belum (false)
+      parameters:
+      - description: ID Tugas
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status Tugas
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.TaskStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update status tugas (Centang)
+      tags:
+      - Tasks
   /api/teams:
     post:
       consumes:

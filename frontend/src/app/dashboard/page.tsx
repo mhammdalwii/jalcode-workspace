@@ -24,6 +24,7 @@ const ClientModal = dynamic(() => import("@/components/ui/ClientModal"), {
   ssr: false,
 });
 const MenteeModal = dynamic(() => import("@/components/ui/MenteeModal"), { ssr: false });
+const ProjectDetailPanel = dynamic(() => import("@/components/ui/ProjectDetailPanel"), { ssr: false });
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -35,6 +36,9 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"projects" | "teams" | "clients" | "mentees">("projects");
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
   const [mentees, setMentees] = useState<Mentee[]>([]);
+
+  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const [isMenteeModalOpen, setIsMenteeModalOpen] = useState(false);
   const [editingMentee, setEditingMentee] = useState<Mentee | null>(null);
@@ -308,6 +312,8 @@ export default function DashboardPage() {
         </div>
         <SearchFilterBar activeTab={activeTab} searchQuery={searchQuery} setSearchQuery={setSearchQuery} filterStatus={filterStatus} setFilterStatus={setFilterStatus} filterRole={filterRole} setFilterRole={setFilterRole} />
 
+        <ProjectDetailPanel isOpen={isDetailPanelOpen} onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={fetchData} />
+
         {/* AREA KONTEN UTAMA */}
 
         {/* 1. TABEL PROYEK */}
@@ -363,6 +369,10 @@ export default function DashboardPage() {
                     }}
                     onDelete={handleDeleteProject}
                     onStatusChange={handleStatusChange}
+                    onOpenDetail={(p) => {
+                      setSelectedProject(p);
+                      setIsDetailPanelOpen(true);
+                    }}
                   />
                 </div>
               )}

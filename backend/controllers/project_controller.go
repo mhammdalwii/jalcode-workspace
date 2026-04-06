@@ -19,15 +19,18 @@ import (
 func GetProjects(c *gin.Context) {
 	var projects []models.Project
 
-	// 1. Tarik data dari DB beserta relasi Tim dan Klien
-	if err := config.DB.Preload("TeamMember").Preload("Client").Find(&projects).Error; err != nil {
+	//  data dari DB beserta relasi Tim dan Klien
+	if err := config.DB.Preload("TeamMember").Preload("Client").Preload("Tasks").Find(&projects).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data proyek"})
 		return
 	}
 	// (HAPUS c.JSON mentah dan tanda '}' nyasar yang sebelumnya ada di sini)
 
+
+	
 	//  array kosong untuk DTO
 	var projectResponses []dto.ProjectResponse
+	var taskResponses []dto.TaskResponse
 
 	//  perulangan untuk memetakan data
 	for _, p := range projects {
@@ -38,13 +41,23 @@ func GetProjects(c *gin.Context) {
 			Email: p.TeamMember.Email,
 		}
 
+		for _, t := range p.Tasks {
+			taskResponses = append(taskResponses, dto.TaskResponse{
+				ID:        t.ID,
+				ProjectID: t.ProjectID,
+				Title:     t.Title,
+				IsDone:    t.IsDone,
+			})
+		}
+
 		projectResponse := dto.ProjectResponse{
 			ID:       p.ID,
 			Title:    p.Title,
 			Category: p.Category,
 			Status:   p.Status,
 			PIC:      pic,
-			Client:   p.Client, 
+			Client:   p.Client,
+			Tasks:    taskResponses, 
 		}
 
 		projectResponses = append(projectResponses, projectResponse)
