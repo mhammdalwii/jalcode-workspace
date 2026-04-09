@@ -4,6 +4,7 @@ import (
 	"jalcode-api/config"
 	"jalcode-api/dto"
 	"jalcode-api/models"
+	"jalcode-api/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -140,6 +141,24 @@ func UpdateProject(c *gin.Context) {
 
 	config.DB.Save(&project)
 	config.DB.Preload("TeamMember").Preload("Client").First(&project, id)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
+
+	userIDObj, exists := c.Get("id") 
+	if exists {
+		// Konversi ke uint
+		var userID uint
+		switch v := userIDObj.(type) {
+		case float64:
+			userID = uint(v)
+		case uint:
+			userID = v
+		}
+
+		// Catat aktivitas!
+		pesanTarget := project.Title + " menjadi " + project.Status
+		utils.LogActivity(userID, "Memperbarui status proyek", pesanTarget)
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
 }

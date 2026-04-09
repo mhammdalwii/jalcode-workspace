@@ -10,12 +10,21 @@ import (
 
 // RequireAdmin memastikan hanya user dengan Role "Admin" atau "Founder" yang bisa lewat
 func RequireAdmin(c *gin.Context) {
-	// Ambil userID dari context (yang sudah diset oleh RequireAuth sebelumnya)
-	userID, exists := c.Get("userID")
+//  (Sesuai dengan yang ada di auth_middleware & jwt.go)
+	userIDObj, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Anda belum login"})
 		c.Abort()
 		return
+	}
+
+	// JWT secara default membaca angka sebagai float64, kita ubah ke uint
+	var userID uint
+	switch v := userIDObj.(type) {
+	case float64:
+		userID = uint(v)
+	case uint:
+		userID = v
 	}
 
 	// Cari user di database
@@ -27,7 +36,6 @@ func RequireAdmin(c *gin.Context) {
 	}
 
 	// Cek apakah dia Admin/Founder
-	// (Pastikan di database kamu nanti ada user dengan Role "Admin" atau "Founder")
 	if user.Role != "Admin" && user.Role != "Founder" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Akses ditolak! Fitur ini hanya untuk Admin."})
 		c.Abort()

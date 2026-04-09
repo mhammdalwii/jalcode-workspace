@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { Toaster } from "react-hot-toast";
 import toast from "react-hot-toast";
-import { LogOut, Briefcase, Users, Building2, KanbanSquare, LayoutList, GraduationCap } from "lucide-react";
-import { TeamMember, Project, Client, Mentee } from "@/types";
+import { LogOut, Briefcase, Users, Building2, KanbanSquare, LayoutList, GraduationCap, HistoryIcon } from "lucide-react";
+import { TeamMember, Project, Client, Mentee, ActivityLog } from "@/types";
 import { isAdminOrFounder } from "@/utils/auth";
 import dynamic from "next/dynamic";
 
@@ -28,6 +28,8 @@ const ProjectModal = dynamic(() => import("@/components/ui/ProjectModal"), {
 const ClientModal = dynamic(() => import("@/components/ui/ClientModal"), { ssr: false });
 const MenteeModal = dynamic(() => import("@/components/ui/MenteeModal"), { ssr: false });
 const ProjectDetailPanel = dynamic(() => import("@/components/ui/ProjectDetailPanel"), { ssr: false });
+import ActivityPanel from "@/components/ui/ActivityPanel";
+import CredentialPanel from "@/components/ui/CredentialPanel";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -46,6 +48,14 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [filterRole, setFilterRole] = useState("All");
+
+  // state untuk log aktivitas
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false);
+
+  // state untuk credential
+  const [selectedClientForVault, setSelectedClientForVault] = useState<Client | null>(null);
+  const [isCredentialPanelOpen, setIsCredentialPanelOpen] = useState(false);
 
   // --- STATE MODAL ---
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
@@ -90,6 +100,13 @@ export default function DashboardPage() {
         fetch("http://localhost:8080/api/clients/", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("http://localhost:8080/api/mentees/", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+
+      if (teamsRes.status === 401 || projectsRes.status === 401) {
+        toast.error("Sesi Anda telah berakhir. Silakan login kembali.");
+        Cookies.remove("token");
+        router.push("/login");
+        return;
+      }
 
       const teamsData = await teamsRes.json();
       const projectsText = await projectsRes.text();
@@ -223,7 +240,16 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Jalcode Workspace</h1>
             <p className="text-gray-500 mt-1">Manajemen Tim Internal & Operasional</p>
+            <div className="flex items-center gap-3 mt-3">
+              {/* Tombol Riwayat (Hanya Muncul untuk Admin) */}
+              {isAdmin && (
+                <button onClick={() => setIsActivityPanelOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition shadow-sm">
+                  <HistoryIcon size={18} /> Riwayat
+                </button>
+              )}
+            </div>
           </div>
+
           <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition">
             <LogOut size={18} /> Logout
           </button>
@@ -344,6 +370,10 @@ export default function DashboardPage() {
                 setIsClientModalOpen(true);
               }}
               onDelete={handleDeleteClient}
+              onOpenVault={(c) => {
+                setSelectedClientForVault(c);
+                setIsCredentialPanelOpen(true);
+              }}
               isAdmin={isAdmin}
             />
           </div>
@@ -409,8 +439,9 @@ export default function DashboardPage() {
       <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={fetchData} teams={teams} editData={editingProject} clients={clients} />
       <ClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={fetchData} editData={editingClient} />
       <MenteeModal isOpen={isMenteeModalOpen} onClose={() => setIsMenteeModalOpen(false)} onSuccess={fetchData} teams={teams} editData={editingMentee} />
-
       <TeamModal isOpen={isTeamModalOpen} onClose={() => setIsTeamModalOpen(false)} onSubmit={handleSubmitTeam} isSubmitting={isSubmittingTeam} formData={teamFormData} setFormData={setTeamFormData} isEditMode={!!editingTeam} />
+      <ActivityPanel isOpen={isActivityPanelOpen} onClose={() => setIsActivityPanelOpen(false)} activities={activities} />
+      <CredentialPanel isOpen={isCredentialPanelOpen} onClose={() => setIsCredentialPanelOpen(false)} client={selectedClientForVault} />
     </div>
   );
 }

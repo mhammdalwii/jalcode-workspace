@@ -92,7 +92,6 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
       if (!res.ok) throw new Error("Gagal mengunggah file");
       toast.success("File berhasil dilampirkan!");
       onRefresh(); // Tarik ulang data agar file muncul di UI
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -124,7 +123,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     <>
       <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity" onClick={onClose} />
 
-      <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 translate-x-0">
+      <div className="fixed inset-y-0 right-0 w-full md:w-112.5 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 translate-x-0">
         {/* HEADER PANEL */}
         <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
           <div>
@@ -172,7 +171,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
               {project.tasks?.map((task) => (
                 <div key={task.id} className="group flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
                   <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => handleToggleStatus(task)}>
-                    {task.is_done ? <CheckCircle2 size={18} className="text-green-500 flex-shrink-0" /> : <Circle size={18} className="text-gray-300 flex-shrink-0" />}
+                    {task.is_done ? <CheckCircle2 size={18} className="text-green-500 shrink-0" /> : <Circle size={18} className="text-gray-300 shrink-0" />}
                     <span className={`text-sm ${task.is_done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</span>
                   </div>
                   <button onClick={() => handleDeleteTask(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity">
