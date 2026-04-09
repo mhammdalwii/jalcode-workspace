@@ -1,5 +1,21 @@
 basePath: /
 definitions:
+  controllers.CredentialRequest:
+    properties:
+      expiry_date:
+        description: 'Format yang diharapkan frontend: YYYY-MM-DD'
+        type: string
+      notes:
+        type: string
+      password:
+        type: string
+      type:
+        type: string
+      url:
+        type: string
+      username:
+        type: string
+    type: object
   dto.ClientRequest:
     properties:
       address:
@@ -116,6 +132,22 @@ info:
   title: Jalcode API Documentation
   version: "1.0"
 paths:
+  /api/activities:
+    get:
+      description: Mengambil 50 aktivitas terbaru dari seluruh anggota tim
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil log aktivitas tim
+      tags:
+      - Activities
   /api/attachments/{id}:
     delete:
       parameters:
@@ -224,6 +256,59 @@ paths:
       summary: Tambah klien baru
       tags:
       - Clients
+  /api/clients/{client_id}/credentials:
+    get:
+      description: Mengambil semua data akses (cPanel, WordPress, dll) milik satu
+        klien tertentu
+      parameters:
+      - description: ID Klien
+        in: path
+        name: client_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil daftar kredensial klien
+      tags:
+      - Credentials
+    post:
+      consumes:
+      - application/json
+      description: Menyimpan password cPanel/Hosting/WordPress klien secara terenkripsi
+        AES-256
+      parameters:
+      - description: ID Klien
+        in: path
+        name: client_id
+        required: true
+        type: string
+      - description: Data Kredensial
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.CredentialRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah akses kredensial klien
+      tags:
+      - Credentials
   /api/clients/{id}:
     delete:
       description: Menghapus perusahaan klien dari database berdasarkan ID
@@ -275,6 +360,28 @@ paths:
       summary: Update data klien
       tags:
       - Clients
+  /api/credentials/{id}:
+    delete:
+      description: Menghapus data kredensial klien dari database secara permanen
+      parameters:
+      - description: ID Kredensial
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus akses kredensial
+      tags:
+      - Credentials
   /api/mentees:
     get:
       description: Menampilkan daftar semua mentee beserta mentornya

@@ -31,7 +31,7 @@ export default function LoginPage() {
       }
 
       // Jika sukses, simpan Token JWT ke Cookies (berlaku 1 hari)
-      Cookies.set("token", data.token, { expires: 1 });
+      Cookies.set("token", data.token, { expires: 1 / 24 });
 
       // Arahkan user ke halaman dashboard utama
       router.push("/dashboard");

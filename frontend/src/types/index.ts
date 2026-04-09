@@ -56,3 +56,24 @@ export interface Attachment {
   file_type: string;
   created_at: string;
 }
+
+export interface ActivityLog {
+  id: number;
+  user_id: number;
+  user: TeamMember;
+  action: string;
+  target: string;
+  created_at: string;
+}
+
+export interface Credential {
+  id: number;
+  client_id: number;
+  type: string;
+  url: string;
+  username: string;
+  password: string; // yang ini sudah versi Decrypt (asli)
+  expiry_date: string;
+  notes: string;
+  created_at: string;
+}

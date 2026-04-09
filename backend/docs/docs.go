@@ -15,6 +15,32 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/activities": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil 50 aktivitas terbaru dari seluruh anggota tim",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Activities"
+                ],
+                "summary": "Ambil log aktivitas tim",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/attachments/{id}": {
             "delete": {
                 "security": [
@@ -183,6 +209,86 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/clients/{client_id}/credentials": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil semua data akses (cPanel, WordPress, dll) milik satu klien tertentu",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credentials"
+                ],
+                "summary": "Ambil daftar kredensial klien",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Klien",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menyimpan password cPanel/Hosting/WordPress klien secara terenkripsi AES-256",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credentials"
+                ],
+                "summary": "Tambah akses kredensial klien",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Klien",
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Kredensial",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/controllers.CredentialRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/clients/{id}": {
             "put": {
                 "security": [
@@ -247,6 +353,41 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "ID Klien",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/credentials/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus data kredensial klien dari database secara permanen",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Credentials"
+                ],
+                "summary": "Hapus akses kredensial",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Kredensial",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -866,6 +1007,30 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controllers.CredentialRequest": {
+            "type": "object",
+            "properties": {
+                "expiry_date": {
+                    "description": "Format yang diharapkan frontend: YYYY-MM-DD",
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ClientRequest": {
             "type": "object",
             "required": [

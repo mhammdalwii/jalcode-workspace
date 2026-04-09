@@ -33,15 +33,15 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
     },
   });
 
-  // 3. AUTO-FILL SAAT MODE EDIT
+  // AUTO-FILL SAAT MODE EDIT
   useEffect(() => {
     if (editData) {
       reset({
         title: editData.title,
-        client_id: editData.client_id ? String(editData.client_id) : "",
         category: editData.category,
         status: editData.status,
-        team_member_id: String(editData.team_member_id || ""),
+        team_member_id: editData.pic?.id ? String(editData.pic.id) : "",
+        client_id: editData.client?.id ? String(editData.client.id) : "",
       });
     } else {
       reset({
@@ -54,7 +54,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
     }
   }, [editData, isOpen, reset]);
 
-  // 4. FUNGSI SUBMIT
+  // FUNGSI SUBMIT
   const onSubmit = async (data: ProjectFormValues) => {
     try {
       const token = Cookies.get("token");

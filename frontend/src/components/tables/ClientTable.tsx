@@ -1,4 +1,4 @@
-import { Edit, Trash2, Building2, User, Phone, Mail } from "lucide-react";
+import { Edit, Trash2, Building2, User, Phone, Mail, Key } from "lucide-react";
 import { Client } from "@/types";
 
 interface ClientTableProps {
@@ -6,9 +6,10 @@ interface ClientTableProps {
   onEdit: (client: Client) => void;
   onDelete: (id: number) => void;
   isAdmin?: boolean;
+  onOpenVault: (client: Client) => void;
 }
 
-export default function ClientTable({ clients, onEdit, onDelete, isAdmin }: ClientTableProps) {
+export default function ClientTable({ clients, onEdit, onDelete, isAdmin, onOpenVault }: ClientTableProps) {
   if (!clients || clients.length === 0) {
     return <div className="p-8 text-center text-gray-500">Belum ada data klien yang tersimpan.</div>;
   }
@@ -47,11 +48,15 @@ export default function ClientTable({ clients, onEdit, onDelete, isAdmin }: Clie
               </td>
               <td className="p-4 text-right">
                 {isAdmin && (
-                  <div className="flex justify-end gap-3">
-                    <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800">
+                  <div className="flex justify-end gap-4 items-center">
+                    <button onClick={() => onOpenVault(c)} className="text-emerald-500 hover:text-emerald-700 transition" title="Buka Brankas Kredensial">
+                      <Key size={18} />
+                    </button>
+
+                    <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800 transition">
                       <Edit size={18} />
                     </button>
-                    <button onClick={() => onDelete(c.id)} className="text-red-600 hover:text-red-800">
+                    <button onClick={() => onDelete(c.id)} className="text-red-600 hover:text-red-800 transition">
                       <Trash2 size={18} />
                     </button>
                   </div>

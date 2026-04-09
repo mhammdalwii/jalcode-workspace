@@ -16,7 +16,7 @@ func GenerateToken(userID uint, role string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":   userID,
 		"role": role,
-		"exp":  time.Now().Add(time.Hour * 24).Unix(), 
+		"exp":  time.Now().Add(time.Minute * 60).Unix(),
 	}
 
 	// Buat token dengan algoritma HS256

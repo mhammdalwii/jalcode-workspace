@@ -11,6 +11,7 @@ type Client struct {
 	Phone     string    `json:"phone"`                  
 	Address   string    `json:"address"`                  
 	Projects  []Project `json:"projects,omitempty" gorm:"foreignKey:ClientID"` // Relasi One-to-Many
+	Credentials []Credential `json:"credentials" gorm:"foreignKey:ClientID"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
