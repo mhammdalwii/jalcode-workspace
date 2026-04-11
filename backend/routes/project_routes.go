@@ -16,6 +16,7 @@ projectGroup := r.Group("/api/projects", middleware.RequireAuth)
 		projectGroup.POST("/:id/attachments", controllers.UploadAttachment)
 		projectGroup.DELETE("/:id", middleware.RequireAdmin, controllers.DeleteProject)
 		r.DELETE("/api/attachments/:id", middleware.RequireAuth, controllers.DeleteAttachment)
+		r.GET("/api/activities/", middleware.RequireAuth, controllers.GetActivities)
 	}
 }
 

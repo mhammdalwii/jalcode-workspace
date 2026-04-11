@@ -26,7 +26,7 @@ import (
 func main() {
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{}, &models.ActivityLog{}, &models.ContentPlan{})
 	
 
 	r := gin.Default()
@@ -54,6 +54,7 @@ func main() {
 	routes.SetupClientRoutes(r)
 	routes.SetupMenteeRoutes(r)
 	routes.SetupTaskRoutes(r)
+	routes.ContentRoutes(r)
 	
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

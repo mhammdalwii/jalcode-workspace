@@ -4,7 +4,7 @@ interface SectionHeaderProps {
   title: string;
   count: number;
   countLabel?: string;
-  badgeColor?: "green" | "purple" | "blue" | "indigo";
+  badgeColor?: "green" | "purple" | "blue" | "indigo" | "pink";
   buttonText: string;
   onAdd: () => void;
   isAdmin: boolean;
@@ -19,6 +19,7 @@ export default function SectionHeader({ title, count, countLabel = "Ditemukan", 
     purple: "bg-purple-50 text-purple-600",
     blue: "bg-blue-50 text-blue-600",
     indigo: "bg-indigo-50 text-indigo-600",
+    pink: "bg-pink-50 text-pink-600",
   };
 
   return (
