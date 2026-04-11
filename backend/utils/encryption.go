@@ -10,7 +10,7 @@ import (
 	"os"
 )
 
-// Ambil kunci rahasia dari .env (Harus tepat 32 karakter!)
+//  kunci rahasia dari .env
 func getSecretKey() []byte {
 	key := os.Getenv("ENCRYPTION_KEY")
 	if len(key) != 32 {

@@ -363,6 +363,150 @@
                 }
             }
         },
+        "/api/contents/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil daftar ide dan jadwal konten internal Jalcode",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contents"
+                ],
+                "summary": "Ambil semua rencana konten",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menambahkan ide atau jadwal konten ke dalam kalender",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contents"
+                ],
+                "summary": "Tambah rencana konten baru",
+                "parameters": [
+                    {
+                        "description": "Data Konten",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ContentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/contents/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui status, jadwal, atau detail konten lainnya",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contents"
+                ],
+                "summary": "Update data konten",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Konten",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.ContentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus konten dari kalender pemasaran",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contents"
+                ],
+                "summary": "Hapus rencana konten",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Konten",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/credentials/{id}": {
             "delete": {
                 "security": [
@@ -1045,6 +1189,36 @@
                     "type": "string"
                 },
                 "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.ContentRequest": {
+            "type": "object",
+            "required": [
+                "platform",
+                "status",
+                "team_member_id",
+                "title"
+            ],
+            "properties": {
+                "notes": {
+                    "type": "string"
+                },
+                "platform": {
+                    "type": "string"
+                },
+                "publish_date": {
+                    "description": "Format: YYYY-MM-DD",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "team_member_id": {
+                    "type": "integer"
+                },
+                "title": {
                     "type": "string"
                 }
             }

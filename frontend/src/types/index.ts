@@ -77,3 +77,14 @@ export interface Credential {
   notes: string;
   created_at: string;
 }
+
+export interface ContentPlan {
+  id: number;
+  title: string;
+  platform: string;
+  status: string; // "Ide", "Drafting", "Review", "Terjadwal", "Publish"
+  publish_date: string | null;
+  pic: TeamMember;
+  notes: string;
+  created_at: string;
+}

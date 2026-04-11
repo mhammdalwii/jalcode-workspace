@@ -105,6 +105,20 @@ func CreateProject(c *gin.Context) {
 	}
 
 	config.DB.Create(&input)
+
+	// CATAT AKTIVITAS
+	userIDObj, exists := c.Get("id")
+	if exists {
+		var userID uint
+		switch v := userIDObj.(type) {
+		case float64:
+			userID = uint(v)
+		case uint:
+			userID = v
+		}
+		utils.LogActivity(userID, "Menambahkan proyek baru", input.Title)
+	}
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Proyek berhasil ditambahkan!", "data": input})
 }
 
@@ -127,6 +141,9 @@ func UpdateProject(c *gin.Context) {
 		return
 	}
 
+	// Simpan status lama sebelum diupdate untuk perbandingan
+	oldStatus := project.Status
+
 	var req dto.ProjectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -142,11 +159,9 @@ func UpdateProject(c *gin.Context) {
 	config.DB.Save(&project)
 	config.DB.Preload("TeamMember").Preload("Client").First(&project, id)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
-
-	userIDObj, exists := c.Get("id") 
+	// CATAT AKTIVITAS
+	userIDObj, exists := c.Get("id")
 	if exists {
-		// Konversi ke uint
 		var userID uint
 		switch v := userIDObj.(type) {
 		case float64:
@@ -155,11 +170,16 @@ func UpdateProject(c *gin.Context) {
 			userID = v
 		}
 
-		// Catat aktivitas!
-		pesanTarget := project.Title + " menjadi " + project.Status
-		utils.LogActivity(userID, "Memperbarui status proyek", pesanTarget)
+		actionDetail := project.Title
+		if oldStatus != project.Status {
+			actionDetail = project.Title + " menjadi " + project.Status
+			utils.LogActivity(userID, "Memindahkan status proyek", actionDetail)
+		} else {
+			utils.LogActivity(userID, "Memperbarui data proyek", actionDetail)
+		}
 	}
 
+	// HANYA ADA SATU c.JSON DI SINI
 	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
 }
 
@@ -178,6 +198,19 @@ func DeleteProject(c *gin.Context) {
 	if err := config.DB.First(&project, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Proyek tidak ditemukan!"})
 		return
+	}
+
+	// CATAT AKTIVITAS (Sebelum datanya hilang)
+	userIDObj, exists := c.Get("id")
+	if exists {
+		var userID uint
+		switch v := userIDObj.(type) {
+		case float64:
+			userID = uint(v)
+		case uint:
+			userID = v
+		}
+		utils.LogActivity(userID, "Menghapus proyek", project.Title)
 	}
 
 	config.DB.Delete(&project)

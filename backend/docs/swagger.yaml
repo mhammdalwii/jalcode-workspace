@@ -32,6 +32,27 @@ definitions:
     - company
     - name
     type: object
+  dto.ContentRequest:
+    properties:
+      notes:
+        type: string
+      platform:
+        type: string
+      publish_date:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      status:
+        type: string
+      team_member_id:
+        type: integer
+      title:
+        type: string
+    required:
+    - platform
+    - status
+    - team_member_id
+    - title
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -360,6 +381,97 @@ paths:
       summary: Update data klien
       tags:
       - Clients
+  /api/contents/:
+    get:
+      description: Mengambil daftar ide dan jadwal konten internal Jalcode
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil semua rencana konten
+      tags:
+      - Contents
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan ide atau jadwal konten ke dalam kalender
+      parameters:
+      - description: Data Konten
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ContentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah rencana konten baru
+      tags:
+      - Contents
+  /api/contents/{id}:
+    delete:
+      description: Menghapus konten dari kalender pemasaran
+      parameters:
+      - description: ID Konten
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus rencana konten
+      tags:
+      - Contents
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui status, jadwal, atau detail konten lainnya
+      parameters:
+      - description: ID Konten
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ContentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update data konten
+      tags:
+      - Contents
   /api/credentials/{id}:
     delete:
       description: Menghapus data kredensial klien dari database secara permanen
