@@ -26,7 +26,7 @@ import (
 func main() {
 	config.ConnectDatabase()
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
-	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{}, &models.ActivityLog{}, &models.ContentPlan{})
+	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{}, &models.ActivityLog{}, &models.ContentPlan{}, &models.Invoice{}, &models.AgencyProfile{})
 	
 
 	r := gin.Default()
@@ -47,7 +47,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"message": "Server Go berjalan lancar 🚀"})
 	})
 
-	// route tim di sini
+	// route tim 
 	routes.SetupTeamRoutes(r)
 	routes.SetupProjectRoutes(r)
 	routes.SetupAuthRoutes(r)
@@ -55,6 +55,8 @@ func main() {
 	routes.SetupMenteeRoutes(r)
 	routes.SetupTaskRoutes(r)
 	routes.ContentRoutes(r)
+	routes.InvoiceRoutes(r)
+	routes.AgencyRoutes(r)
 	
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

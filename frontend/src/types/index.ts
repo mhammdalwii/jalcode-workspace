@@ -88,3 +88,18 @@ export interface ContentPlan {
   notes: string;
   created_at: string;
 }
+
+export interface Invoice {
+  id: number;
+  invoice_number: string;
+  project_id: number;
+  project_title: string;
+  client_name: string;
+  amount: number;
+  status: string; // "Unpaid", "Paid", "Overdue"
+  issue_date: string;
+  due_date: string;
+  service_type: string;
+  notes: string;
+  created_at: string;
+}

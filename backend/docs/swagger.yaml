@@ -16,6 +16,23 @@ definitions:
       username:
         type: string
     type: object
+  dto.AgencyProfileRequest:
+    properties:
+      company:
+        type: string
+      email:
+        type: string
+      logo:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+    required:
+    - company
+    - email
+    - name
+    type: object
   dto.ClientRequest:
     properties:
       address:
@@ -52,6 +69,29 @@ definitions:
     - status
     - team_member_id
     - title
+    type: object
+  dto.InvoiceRequest:
+    properties:
+      amount:
+        type: number
+      due_date:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      issue_date:
+        description: 'Format: YYYY-MM-DD'
+        type: string
+      notes:
+        type: string
+      project_id:
+        type: integer
+      service_type:
+        type: string
+      status:
+        type: string
+    required:
+    - amount
+    - project_id
+    - status
     type: object
   dto.LoginRequest:
     properties:
@@ -169,6 +209,46 @@ paths:
       summary: Ambil log aktivitas tim
       tags:
       - Activities
+  /api/agency/:
+    get:
+      description: Mengambil data profil perusahaan, logo, dan kontak utama
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil profil agensi
+      tags:
+      - Agency
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui nama, email, logo, dan detail perusahaan
+      parameters:
+      - description: Data Agensi
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.AgencyProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update profil agensi
+      tags:
+      - Agency
   /api/attachments/{id}:
     delete:
       parameters:
@@ -235,6 +315,19 @@ paths:
             additionalProperties: true
             type: object
       summary: Register member baru
+      tags:
+      - Auth
+  /api/auth/update-password:
+    put:
+      consumes:
+      - application/json
+      description: Mengganti password pengguna yang sedang login
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update Password
       tags:
       - Auth
   /api/clients:
@@ -494,6 +587,98 @@ paths:
       summary: Hapus akses kredensial
       tags:
       - Credentials
+  /api/invoices/:
+    get:
+      description: Mengambil daftar tagihan pembayaran
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ambil semua invoice
+      tags:
+      - Invoices
+    post:
+      consumes:
+      - application/json
+      description: Membuat tagihan baru dengan nomor urut otomatis
+      parameters:
+      - description: Data Invoice
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Buat invoice baru
+      tags:
+      - Invoices
+  /api/invoices/{id}:
+    delete:
+      description: Menghapus data invoice yang salah
+      parameters:
+      - description: ID Invoice
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus tagihan
+      tags:
+      - Invoices
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui nominal atau status tagihan (misal dari Unpaid jadi
+        Paid)
+      parameters:
+      - description: ID Invoice
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Data Update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.InvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update status pembayaran
+      tags:
+      - Invoices
   /api/mentees:
     get:
       description: Menampilkan daftar semua mentee beserta mentornya
