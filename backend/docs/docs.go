@@ -41,6 +41,70 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/agency/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil data profil perusahaan, logo, dan kontak utama",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agency"
+                ],
+                "summary": "Ambil profil agensi",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui nama, email, logo, dan detail perusahaan",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agency"
+                ],
+                "summary": "Update profil agensi",
+                "parameters": [
+                    {
+                        "description": "Data Agensi",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AgencyProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/attachments/{id}": {
             "delete": {
                 "security": [
@@ -143,6 +207,27 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/api/auth/update-password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengganti password pengguna yang sedang login",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update Password",
+                "responses": {}
             }
         },
         "/api/clients": {
@@ -532,6 +617,150 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "ID Kredensial",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices/": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil daftar tagihan pembayaran",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Ambil semua invoice",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Membuat tagihan baru dengan nomor urut otomatis",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Buat invoice baru",
+                "parameters": [
+                    {
+                        "description": "Data Invoice",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.InvoiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invoices/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui nominal atau status tagihan (misal dari Unpaid jadi Paid)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Update status pembayaran",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Invoice",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data Update",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.InvoiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menghapus data invoice yang salah",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Invoices"
+                ],
+                "summary": "Hapus tagihan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Invoice",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1175,6 +1404,31 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.AgencyProfileRequest": {
+            "type": "object",
+            "required": [
+                "company",
+                "email",
+                "name"
+            ],
+            "properties": {
+                "company": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "logo": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.ClientRequest": {
             "type": "object",
             "required": [
@@ -1225,6 +1479,39 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.InvoiceRequest": {
+            "type": "object",
+            "required": [
+                "amount",
+                "project_id",
+                "status"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "due_date": {
+                    "description": "Format: YYYY-MM-DD",
+                    "type": "string"
+                },
+                "issue_date": {
+                    "description": "Format: YYYY-MM-DD",
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "project_id": {
+                    "type": "integer"
+                },
+                "service_type": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
