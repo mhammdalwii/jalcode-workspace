@@ -13,24 +13,38 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	//  file .env
+	// baca file .env, tapi JANGAN gunakan log.Fatal.
+	// Di server produksi (Docker/Render), file .env memang tidak ada, 
+	// menggunakan Environment Variables bawaan server.
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Gagal membaca file .env")
+		log.Println("⚠️ Info: File .env tidak ditemukan, menggunakan Environment Variable dari OS.")
 	}
 
-	//  Susun string koneksi (DSN)
-	dsn := "host=" + os.Getenv("DB_HOST") + 
-		" user=" + os.Getenv("DB_USER") + 
-		" password=" + os.Getenv("DB_PASSWORD") + 
-		" dbname=" + os.Getenv("DB_NAME") + 
-		" port=" + os.Getenv("DB_PORT") + 
-		" sslmode=disable"
+	var dsn string
 
-	//  menggunakan GORM
+	//  Cek apakah ada DATABASE_URL (Format URL panjang dari Neon.tech / Render)
+	databaseUrl := os.Getenv("DATABASE_URL")
+
+	if databaseUrl != "" {
+		// Gunakan URL langsung jika berada di server / mode cloud
+		dsn = databaseUrl
+		log.Println("☁️ Menghubungkan ke Cloud Database (Neon.tech)...")
+	} else {
+		// Fallback ke localhost jika DATABASE_URL kosong
+		dsn = "host=" + os.Getenv("DB_HOST") +
+			" user=" + os.Getenv("DB_USER") +
+			" password=" + os.Getenv("DB_PASSWORD") +
+			" dbname=" + os.Getenv("DB_NAME") +
+			" port=" + os.Getenv("DB_PORT") +
+			" sslmode=disable"
+		log.Println("💻 Menghubungkan ke Local Database...")
+	}
+
+	//  koneksi menggunakan GORM
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		log.Fatal("Gagal koneksi ke database!", err)
+		log.Fatal("❌ Gagal koneksi ke database: ", err)
 	}
 
 	DB = database

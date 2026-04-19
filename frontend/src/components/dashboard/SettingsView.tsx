@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Lock, User, Building, ShieldCheck, Upload } from "lucide-react";
+import { Save, Lock, User, Building, ShieldCheck, Upload, EyeOff, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 
@@ -23,6 +23,9 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
   });
 
   const [securityData, setSecurityData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const fetchAgency = async () => {
@@ -212,42 +215,60 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
             </div>
 
             <form onSubmit={handleSaveSecurity} className="space-y-5">
+              {/* PASSWORD LAMA */}
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                   <Lock size={14} /> Password Saat Ini
                 </label>
-                <input
-                  required
-                  type="password"
-                  value={securityData.currentPassword}
-                  onChange={(e) => setSecurityData({ ...securityData, currentPassword: e.target.value })}
-                  className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-gray-50"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type={showCurrent ? "text" : "password"}
+                    value={securityData.currentPassword}
+                    onChange={(e) => setSecurityData({ ...securityData, currentPassword: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-gray-50 pr-12"
+                    placeholder="••••••••"
+                  />
+                  <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
+                    {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
+              {/* PASSWORD BARU */}
               <div className="pt-4 border-t border-gray-100">
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Password Baru</label>
-                <input
-                  required
-                  type="password"
-                  value={securityData.newPassword}
-                  onChange={(e) => setSecurityData({ ...securityData, newPassword: e.target.value })}
-                  className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
-                  placeholder="Minimal 8 karakter"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type={showNew ? "text" : "password"}
+                    value={securityData.newPassword}
+                    onChange={(e) => setSecurityData({ ...securityData, newPassword: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 pr-12"
+                    placeholder="Minimal 8 karakter"
+                  />
+                  <button type="button" onClick={() => setShowNew(!showNew)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
+                    {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
+              {/* KONFIRMASI PASSWORD */}
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Konfirmasi Password Baru</label>
-                <input
-                  required
-                  type="password"
-                  value={securityData.confirmPassword}
-                  onChange={(e) => setSecurityData({ ...securityData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
-                  placeholder="Ulangi password baru"
-                />
+                <div className="relative">
+                  <input
+                    required
+                    type={showConfirm ? "text" : "password"}
+                    value={securityData.confirmPassword}
+                    onChange={(e) => setSecurityData({ ...securityData, confirmPassword: e.target.value })}
+                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 pr-12"
+                    placeholder="Ulangi password baru"
+                  />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
+                    {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               <div className="pt-6">

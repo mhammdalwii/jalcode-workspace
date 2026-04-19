@@ -141,3 +141,33 @@ func DeleteTeamMember(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Anggota tim berhasil dihapus"})
 }
+
+// @Summary Reset Password Tim
+// @Description Mereset password anggota tim menjadi default "jalcode123" (Hanya Admin)
+// @Tags Teams
+// @Produce json
+// @Security BearerAuth
+// @Router /api/teams/{id}/reset-password [put]
+func ResetTeamPassword(c *gin.Context) {
+	id := c.Param("id")
+	var member models.TeamMember
+
+	// Cari anggota berdasarkan ID
+	if err := config.DB.First(&member, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Anggota tidak ditemukan"})
+		return
+	}
+
+	//  hash untuk password default: "jalcode123"
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("jalcode123"), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat password default"})
+		return
+	}
+
+	// Simpan ke database
+	member.Password = string(hashedPassword)
+	config.DB.Save(&member)
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password berhasil direset menjadi: jalcode123"})
+}

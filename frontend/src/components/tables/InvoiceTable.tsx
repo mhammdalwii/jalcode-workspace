@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Edit, Trash2, Download, ReceiptText, Calendar } from "lucide-react";
+import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown } from "lucide-react"; // <-- Tambah FileDown
 import { Invoice } from "@/types";
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
@@ -11,12 +11,10 @@ interface InvoiceTableProps {
   onEdit: (invoice: Invoice) => void;
   onDelete: (id: number) => void;
   isAdmin: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agencyProfile: any;
 }
 
 export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agencyProfile }: InvoiceTableProps) {
-  // Referensi untuk menunjuk area HTML yang akan dijadikan PDF
   const printRef = useRef<HTMLDivElement>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
@@ -31,40 +29,57 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
       case "overdue":
         return "bg-red-100 text-red-700";
       default:
-        return "bg-amber-100 text-amber-700"; // Unpaid
+        return "bg-amber-100 text-amber-700";
     }
   };
 
-  // --- FUNGSI SAKTI: 1-CLICK BILLING (html-to-image -> PDF) ---
+  // --- FUNGSI EXPORT KE CSV (EXCEL) ---
+  const handleExportCSV = () => {
+    try {
+      // Header Kolom
+      const headers = ["No Invoice", "Nama Klien/Proyek", "Layanan", "Tenggat Waktu", "Nominal (Rp)", "Status"];
+
+      //  Petakan Data ke Baris
+      const csvRows = invoices.map((inv) => {
+        const clientName = inv.client_name || inv.project_title;
+        // Escape tanda kutip jika ada di nama klien
+        return `"${inv.invoice_number}","${clientName.replace(/"/g, '""')}","${inv.service_type}","${formatDate(inv.due_date)}","${inv.amount}","${inv.status}"`;
+      });
+
+      //  Header dan Baris dengan format pemisah koma
+      const csvString = [headers.join(","), ...csvRows].join("\n");
+
+      //  Ubah menjadi file yang bisa didownload
+      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Laporan_Tagihan_Jalcode_${new Date().toISOString().split("T")[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success("Data berhasil diekspor ke Excel/CSV!");
+    } catch (error) {
+      toast.error("Gagal mengekspor data");
+    }
+  };
+
   const handleDownloadPDF = async (invoice: Invoice) => {
     try {
       setPrintingId(invoice.id);
       setSelectedInvoiceForPrint(invoice);
-
-      // Jeda waktu agar React selesai memuat komponen
       await new Promise((resolve) => setTimeout(resolve, 300));
-
       const element = printRef.current;
       if (!element) throw new Error("Template PDF belum siap di layar.");
 
-      // Menggunakan html-to-image (Tahan banting terhadap warna modern Tailwind)
-      const dataUrl = await toPng(element, {
-        quality: 1,
-        pixelRatio: 2,
-        backgroundColor: "#ffffff",
-      });
-
-      // Ambil dimensi elemen asli untuk proporsi PDF
+      const dataUrl = await toPng(element, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" });
       const elemWidth = element.offsetWidth;
       const elemHeight = element.offsetHeight;
-
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
-
-      // Hitung tinggi proporsional PDF
       const pdfHeight = (elemHeight * pdfWidth) / elemWidth;
 
-      // Tempelkan gambar ke PDF dan unduh
       pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${invoice.invoice_number}_Jalcode.pdf`);
 
@@ -84,6 +99,15 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
 
   return (
     <>
+      {/* TOMBOL EXPORT DI ATAS TABEL */}
+      {isAdmin && (
+        <div className="px-4 py-3 border-b border-gray-100 flex justify-end bg-gray-50/50">
+          <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition shadow-sm">
+            <FileDown size={16} /> Export ke Excel (CSV)
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -145,7 +169,6 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
         </table>
       </div>
 
-      {/* Komponen Hidden untuk Render PDF */}
       <InvoiceTemplate ref={printRef} invoice={selectedInvoiceForPrint} agency={agencyProfile} />
     </>
   );
