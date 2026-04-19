@@ -15,5 +15,6 @@ func SetupTeamRoutes(r *gin.Engine) {
 		teamGroup.POST("/", middleware.RequireAdmin, controllers.CreateTeamMember)
 		teamGroup.PUT("/:id", middleware.RequireAdmin, controllers.UpdateTeamMember)
 		teamGroup.DELETE("/:id", middleware.RequireAdmin, controllers.DeleteTeamMember)
+		teamGroup.PUT("/:id/reset-password", middleware.RequireAdmin, controllers.ResetTeamPassword)
 	}
 }
