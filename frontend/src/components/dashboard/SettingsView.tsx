@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Save, Lock, User, Building, ShieldCheck, Upload, EyeOff, Eye } from "lucide-react";
+import { Save, Lock, User, Building, ShieldCheck, Upload, EyeOff, Eye, Info } from "lucide-react";
 import toast from "react-hot-toast";
-import Cookies from "js-cookie";
 
-// Menambahkan interface props agar onSuccess dikenali
+// Import prajurit pintar kita
+import { fetchWithAuth } from "@/utils/fetchApi";
+import { isAdminOrFounder } from "@/utils/auth";
+
 interface SettingsViewProps {
   onSuccess: () => void;
 }
@@ -11,6 +13,7 @@ interface SettingsViewProps {
 export default function SettingsView({ onSuccess }: SettingsViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"profile" | "security">("profile");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,11 +31,12 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
   const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
+    // Cek apakah user ini punya hak akses Founder/Admin
+    setIsAdmin(isAdminOrFounder());
+
     const fetchAgency = async () => {
       try {
-        const res = await fetch("http://localhost:8080/api/agency/", {
-          headers: { Authorization: `Bearer ${Cookies.get("token")}` },
-        });
+        const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`);
         const result = await res.json();
         if (result.data) setProfileData(result.data);
       } catch (err) {
@@ -56,19 +60,17 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return toast.error("Hanya Admin/Founder yang dapat mengubah profil!"); // Keamanan ganda
+
     setIsSubmitting(true);
     try {
-      const res = await fetch("http://localhost:8080/api/agency/", {
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Cookies.get("token")}`,
-        },
         body: JSON.stringify(profileData),
       });
       if (res.ok) {
         toast.success("Profil berhasil disimpan ke Database!");
-        onSuccess(); // Refresh data global di page.tsx
+        onSuccess();
       } else {
         throw new Error("Gagal menyimpan");
       }
@@ -82,7 +84,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
   const handleSaveSecurity = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validasi dasar di sisi Frontend
     if (securityData.newPassword !== securityData.confirmPassword) {
       return toast.error("Password baru dan konfirmasi tidak cocok!");
     }
@@ -93,13 +94,8 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
     setIsSubmitting(true);
 
     try {
-      //  API Golang
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/update-password`, {
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/update-password`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${Cookies.get("token")}`,
-        },
         body: JSON.stringify({
           current_password: securityData.currentPassword,
           new_password: securityData.newPassword,
@@ -112,9 +108,9 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
         throw new Error(data.error || "Terjadi kesalahan saat mengubah password");
       }
 
-      // Jika sukses, kosongkan form dan beri notifikasi
       toast.success(data.message || "Password berhasil diubah!");
       setSecurityData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -145,23 +141,44 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
       <div className="flex-1 p-8">
         {activeSubTab === "profile" && (
           <div className="max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-gray-900">Profil Agensi</h2>
-              <p className="text-gray-500 mt-1">Perbarui informasi dasar perusahaan dan logo yang akan tampil di Invoice.</p>
+            <div className="mb-8 flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Profil Agensi</h2>
+                <p className="text-gray-500 mt-1">Perbarui informasi dasar perusahaan dan logo yang akan tampil di Invoice.</p>
+              </div>
+              {/* Notifikasi visual jika mode hanya-lihat */}
+              {!isAdmin && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-medium">
+                  <Lock size={14} /> Mode Hanya Lihat
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="flex items-center gap-6 pb-6 border-b border-gray-100">
-                <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50">
+                <div className="w-20 h-20 rounded-2xl border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50 opacity-90">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={profileData.logo || "/logo/logoRemove.png"} alt="Logo" className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoChange} className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition">
-                    <Upload size={16} /> Pilih Logo Baru
-                  </button>
-                  <p className="text-xs text-gray-400 mt-2">Disarankan rasio kotak (1:1), maksimal 2MB.</p>
+                  <input type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoChange} className="hidden" disabled={!isAdmin} />
+
+                  {isAdmin ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+                      >
+                        <Upload size={16} /> Pilih Logo Baru
+                      </button>
+                      <p className="text-xs text-gray-400 mt-2">Disarankan rasio kotak (1:1), maksimal 2MB.</p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-gray-500 flex items-center gap-2">
+                      <Info size={14} /> Hanya Admin yang dapat mengubah logo perusahaan.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -170,7 +187,13 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                   <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                     <User size={14} /> Nama Founder / CEO
                   </label>
-                  <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className="px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" />
+                  <input
+                    type="text"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                    disabled={!isAdmin}
+                    className={`px-4 py-2.5 border rounded-xl outline-none transition ${isAdmin ? "focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                  />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
@@ -180,7 +203,8 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                     type="text"
                     value={profileData.company}
                     onChange={(e) => setProfileData({ ...profileData, company: e.target.value })}
-                    className="px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
+                    disabled={!isAdmin}
+                    className={`px-4 py-2.5 border rounded-xl outline-none transition ${isAdmin ? "focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
                   />
                 </div>
                 <div className="flex flex-col">
@@ -189,24 +213,35 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                     type="email"
                     value={profileData.email}
                     onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                    className="px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50"
+                    disabled={!isAdmin}
+                    className={`px-4 py-2.5 border rounded-xl outline-none transition ${isAdmin ? "focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
                   />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-sm font-semibold text-gray-700 mb-1.5">Nomor WhatsApp / Telepon</label>
-                  <input type="text" value={profileData.phone} onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })} className="px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50" />
+                  <input
+                    type="text"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    disabled={!isAdmin}
+                    className={`px-4 py-2.5 border rounded-xl outline-none transition ${isAdmin ? "focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                  />
                 </div>
               </div>
 
-              <div className="pt-4 flex justify-end">
-                <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                  <Save size={18} /> {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
-                </button>
-              </div>
+              {/* Tampilkan tombol simpan hanya untuk Admin/Founder */}
+              {isAdmin && (
+                <div className="pt-4 flex justify-end">
+                  <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                    <Save size={18} /> {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         )}
 
+        {/* TAB KEAMANAN - TETAP BISA DIAKSES OLEH SEMUA ROLE */}
         {activeSubTab === "security" && (
           <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
@@ -215,7 +250,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
             </div>
 
             <form onSubmit={handleSaveSecurity} className="space-y-5">
-              {/* PASSWORD LAMA */}
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                   <Lock size={14} /> Password Saat Ini
@@ -235,7 +269,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                 </div>
               </div>
 
-              {/* PASSWORD BARU */}
               <div className="pt-4 border-t border-gray-100">
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Password Baru</label>
                 <div className="relative">
@@ -253,7 +286,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                 </div>
               </div>
 
-              {/* KONFIRMASI PASSWORD */}
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Konfirmasi Password Baru</label>
                 <div className="relative">

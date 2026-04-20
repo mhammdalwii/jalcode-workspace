@@ -25,10 +25,13 @@ export default function TeamModal({ isOpen, onClose, onSubmit, isSubmitting, for
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Divisi / Role</label>
             <select className="w-full px-3 py-2 border rounded-lg text-black" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })}>
-              <option value="Web Developer">Web Developer</option>
-              <option value="UI/UX Designer">UI/UX Designer</option>
-              <option value="Project Manager">Project Manager</option>
-              <option value="Admin">Admin</option>
+              <option value="Founder">Founder</option>
+              <option value="Admin">Admin & Social Media Manager</option>
+              <option value="Mobile Application Engineer">Mobile Application Engineer</option>
+              <option value="Visual Designer">Visual Designer</option>
+              <option value="Product Designer">Product Designer</option>
+              <option value="Web Engineer Backend">Backend</option>
+              <option value="Web Engineer Frontend">Frontend</option>
             </select>
           </div>
           <div>
