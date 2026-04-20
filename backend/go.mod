@@ -1,6 +1,6 @@
 module jalcode-api
 
-go 1.26.1
+go 1.22.0
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
