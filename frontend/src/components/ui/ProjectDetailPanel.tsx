@@ -28,7 +28,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
     setIsLoadingTask(true);
     try {
-      const res = await fetch("http://localhost:8080/api/tasks/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
         body: JSON.stringify({ project_id: project.id, title: newTaskTitle }),
@@ -45,7 +45,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   const handleToggleStatus = async (task: Task) => {
     try {
-      await fetch(`http://localhost:8080/api/tasks/${task.id}/status`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
         body: JSON.stringify({ is_done: !task.is_done }),
@@ -58,7 +58,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   const handleDeleteTask = async (taskId: number) => {
     try {
-      await fetch(`http://localhost:8080/api/tasks/${taskId}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });
@@ -80,7 +80,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     formData.append("file", file);
 
     try {
-      const res = await fetch(`http://localhost:8080/api/projects/${project.id}/attachments`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
         method: "POST",
         headers: {
           // Jangan set Content-Type untuk FormData, biarkan browser yang atur boundary-nya!
@@ -103,7 +103,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
   const handleDeleteAttachment = async (id: number) => {
     if (!confirm("Hapus lampiran ini?")) return;
     try {
-      await fetch(`http://localhost:8080/api/attachments/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attachments/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });

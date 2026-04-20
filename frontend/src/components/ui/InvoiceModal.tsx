@@ -64,7 +64,7 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
     };
 
     try {
-      const url = editData ? `http://localhost:8080/api/invoices/${editData.id}` : "http://localhost:8080/api/invoices/";
+      const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`;
       const method = editData ? "PUT" : "POST";
 
       const res = await fetch(url, {

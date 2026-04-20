@@ -41,7 +41,7 @@ export default function MenteeModal({ isOpen, onClose, onSuccess, teams, editDat
 
   const onSubmit = async (data: MenteeFormValues) => {
     try {
-      const url = editData ? `http://localhost:8080/api/mentees/${editData.id}` : "http://localhost:8080/api/mentees/";
+      const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`;
       const method = editData ? "PUT" : "POST";
 
       const res = await fetch(url, {

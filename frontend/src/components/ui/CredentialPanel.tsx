@@ -40,7 +40,7 @@ export default function CredentialPanel({ isOpen, onClose, client }: CredentialP
   const fetchCredentials = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/clients/${client?.id}/credentials`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${client?.id}/credentials`, {
         headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });
       if (!res.ok) throw new Error("Gagal memuat brankas");
@@ -57,7 +57,7 @@ export default function CredentialPanel({ isOpen, onClose, client }: CredentialP
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/clients/${client?.id}/credentials`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${client?.id}/credentials`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
         body: JSON.stringify(formData),
@@ -78,7 +78,7 @@ export default function CredentialPanel({ isOpen, onClose, client }: CredentialP
   const handleDelete = async (id: number) => {
     if (!confirm("Hapus akses ini permanen?")) return;
     try {
-      await fetch(`http://localhost:8080/api/credentials/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/credentials/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });

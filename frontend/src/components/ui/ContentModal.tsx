@@ -50,7 +50,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
     const payload = { ...formData, team_member_id: Number(formData.team_member_id) };
 
     try {
-      const url = editData ? `http://localhost:8080/api/contents/${editData.id}` : "http://localhost:8080/api/contents/";
+      const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/contents/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/contents/`;
       const method = editData ? "PUT" : "POST";
 
       const res = await fetch(url, {
