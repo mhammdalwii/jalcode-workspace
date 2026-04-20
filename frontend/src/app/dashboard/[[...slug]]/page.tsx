@@ -139,13 +139,13 @@ export default function DashboardPage() {
 
     try {
       const [teamsRes, projectsRes, clientsRes, menteesRes, contentsRes, invoicesRes, agencyRes] = await Promise.all([
-        fetch("http://localhost:8080/api/teams/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/projects/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/clients/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/mentees/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/contents/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/invoices/", { headers: { Authorization: `Bearer ${token}` } }),
-        fetch("http://localhost:8080/api/agency/", { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (teamsRes.status === 401) {
