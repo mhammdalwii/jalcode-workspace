@@ -16,7 +16,7 @@ export default function TeamTable({ teams, onEdit, onDelete, isAdmin }: TeamTabl
     if (!window.confirm(`Yakin ingin mereset password untuk ${name}? Password barunya akan menjadi: jalcode123`)) return;
 
     try {
-      const res = await fetch(`http://localhost:8080/api/teams/${id}/reset-password`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}/reset-password`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${Cookies.get("token")}`,
