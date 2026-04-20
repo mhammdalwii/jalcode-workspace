@@ -51,7 +51,7 @@ export default function ClientModal({ isOpen, onClose, onSuccess, editData }: Cl
   // 4. FUNGSI SUBMIT YANG SUDAH DIVALIDASI ZOD
   const onSubmit = async (data: ClientFormValues) => {
     try {
-      const url = editData ? `http://localhost:8080/api/clients/${editData.id}` : "http://localhost:8080/api/clients/";
+      const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/clients/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/clients/`;
       const method = editData ? "PUT" : "POST";
 
       const res = await fetch(url, {

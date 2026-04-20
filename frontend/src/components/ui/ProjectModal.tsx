@@ -58,7 +58,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
   const onSubmit = async (data: ProjectFormValues) => {
     try {
       const token = Cookies.get("token");
-      const url = editData ? `http://localhost:8080/api/projects/${editData.id}` : "http://localhost:8080/api/projects/";
+      const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/projects/`;
       const method = editData ? "PUT" : "POST";
 
       // Persiapkan data untuk backend (Convert ID kembali ke Number)
