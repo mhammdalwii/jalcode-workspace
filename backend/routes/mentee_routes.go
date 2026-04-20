@@ -14,8 +14,8 @@ func SetupMenteeRoutes(r *gin.Engine) {
 		menteeGroup.GET("/", controllers.GetMentees) 
 		
 		// Hanya Admin/Founder yang bisa kelola data mentee
-		menteeGroup.POST("/", middleware.RequireAdmin, controllers.CreateMentee)
-		menteeGroup.PUT("/:id", middleware.RequireAdmin, controllers.UpdateMentee)
-		menteeGroup.DELETE("/:id", middleware.RequireAdmin, controllers.DeleteMentee)
+		menteeGroup.POST("/", middleware.RequireRoles("Founder", "Admin"), controllers.CreateMentee)
+		menteeGroup.PUT("/:id", middleware.RequireRoles("Founder", "Admin"), controllers.UpdateMentee)
+		menteeGroup.DELETE("/:id", middleware.RequireRoles("Founder", "Admin"), controllers.DeleteMentee)
 	}
 }

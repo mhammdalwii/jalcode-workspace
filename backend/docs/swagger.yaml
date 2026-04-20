@@ -275,7 +275,7 @@ paths:
       consumes:
       - application/json
       description: Melakukan autentikasi menggunakan email dan password untuk mendapatkan
-        token JWT
+        Access dan Refresh Token
       parameters:
       - description: Data Login
         in: body
@@ -292,6 +292,31 @@ paths:
             additionalProperties: true
             type: object
       summary: Login pengguna
+      tags:
+      - Auth
+  /api/auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Mendapatkan token akses baru menggunakan refresh token
+      parameters:
+      - description: 'Format: {\'
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Berhasil mendapat token baru
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Refresh Token
       tags:
       - Auth
   /api/auth/register:
@@ -1059,6 +1084,18 @@ paths:
       security:
       - BearerAuth: []
       summary: Mengedit data anggota tim
+      tags:
+      - Teams
+  /api/teams/{id}/reset-password:
+    put:
+      description: Mereset password anggota tim menjadi default "jalcode123" (Hanya
+        Admin)
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Reset Password Tim
       tags:
       - Teams
 securityDefinitions:

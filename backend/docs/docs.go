@@ -141,7 +141,7 @@ const docTemplate = `{
         },
         "/api/auth/login": {
             "post": {
-                "description": "Melakukan autentikasi menggunakan email dan password untuk mendapatkan token JWT",
+                "description": "Melakukan autentikasi menggunakan email dan password untuk mendapatkan Access dan Refresh Token",
                 "consumes": [
                     "application/json"
                 ],
@@ -166,6 +166,44 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "Berhasil login \u0026 mendapat token",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "description": "Mendapatkan token akses baru menggunakan refresh token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Refresh Token",
+                "parameters": [
+                    {
+                        "description": "Format: {\\",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mendapat token baru",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -1376,6 +1414,24 @@ const docTemplate = `{
                         }
                     }
                 }
+            }
+        },
+        "/api/teams/{id}/reset-password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mereset password anggota tim menjadi default \"jalcode123\" (Hanya Admin)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Reset Password Tim",
+                "responses": {}
             }
         }
     },
