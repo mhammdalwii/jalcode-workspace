@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 
 import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice } from "@/types";
 import { isAdminOrFounder } from "@/utils/auth";
+import { fetchWithAuth } from "@/utils/fetchApi"; // 👇 Alat bantu Fetch Pintar kita
 
 // --- KOMPONEN IMPORT ---
 import ProjectTable from "@/components/tables/ProjectTable";
@@ -125,7 +126,7 @@ export default function DashboardPage() {
   // --- FUNGSI FETCH ---
   const fetchActivities = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/activities/", { headers: { Authorization: `Bearer ${Cookies.get("token")}` } });
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/activities/`);
       const data = await res.json();
       setActivities(data.data || []);
     } catch (err) {
@@ -134,24 +135,17 @@ export default function DashboardPage() {
   };
 
   const fetchData = async () => {
-    const token = Cookies.get("token");
-    if (!token) return router.push("/login");
-
     try {
+      // Menggunakan fetchWithAuth, tidak perlu lagi repot mengatur header Authorization
       const [teamsRes, projectsRes, clientsRes, menteesRes, contentsRes, invoicesRes, agencyRes] = await Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`),
+        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`),
       ]);
-
-      if (teamsRes.status === 401) {
-        Cookies.remove("token");
-        return router.push("/login");
-      }
 
       setTeams((await teamsRes.json()).data || []);
       const pText = await projectsRes.text();
@@ -172,8 +166,11 @@ export default function DashboardPage() {
   const deleteData = async (url: string, successMsg: string) => {
     if (!confirm(`Yakin ingin menghapus data ini?`)) return;
     try {
-      const res = await fetch(url, { method: "DELETE", headers: { Authorization: `Bearer ${Cookies.get("token")}` } });
-      if (!res.ok) throw new Error("Gagal menghapus data");
+      const res = await fetchWithAuth(url, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Gagal menghapus data");
+      }
       toast.success(successMsg);
       fetchData();
     } catch (err: any) {
@@ -246,11 +243,10 @@ export default function DashboardPage() {
                     setEditingProject(p);
                     setIsProjectModalOpen(true);
                   }}
-                  onDelete={(id) => deleteData(`http://localhost:8080/api/projects/${id}`, "Proyek dihapus!")}
+                  onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!")}
                 />
               ) : (
                 <div className="p-4 overflow-x-auto">
-                  {/* Tambahkan onStatusChange handler dan lain-lain di project Kanban mu jika ada */}
                   <ProjectKanban
                     projects={filteredProjects}
                     isAdmin={isAdmin}
@@ -258,7 +254,7 @@ export default function DashboardPage() {
                       setEditingProject(p);
                       setIsProjectModalOpen(true);
                     }}
-                    onDelete={(id) => deleteData(`http://localhost:8080/api/projects/${id}`, "Proyek dihapus!")}
+                    onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!")}
                     onStatusChange={async () => {
                       fetchData();
                     }}
@@ -294,7 +290,7 @@ export default function DashboardPage() {
                 setEditingClient(c);
                 setIsClientModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`http://localhost:8080/api/clients/${id}`, "Klien dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${id}`, "Klien dihapus!")}
               onOpenVault={(c) => {
                 setSelectedClientForVault(c);
                 setIsCredentialPanelOpen(true);
@@ -326,7 +322,7 @@ export default function DashboardPage() {
                 setTeamFormData({ name: t.name, role: t.role, email: t.email, password: "" });
                 setIsTeamModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`http://localhost:8080/api/teams/${id}`, "Anggota dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}`, "Anggota dihapus!")}
             />
           </div>
         );
@@ -353,7 +349,7 @@ export default function DashboardPage() {
                 setEditingMentee(m);
                 setIsMenteeModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`http://localhost:8080/api/mentees/${id}`, "Peserta dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${id}`, "Peserta dihapus!")}
             />
           </div>
         );
@@ -379,7 +375,7 @@ export default function DashboardPage() {
                 setEditingContent(c);
                 setIsContentModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`http://localhost:8080/api/contents/${id}`, "Konten dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!")}
               onStatusChange={async () => {
                 fetchData();
               }}
@@ -409,7 +405,7 @@ export default function DashboardPage() {
                 setEditingInvoice(inv);
                 setIsInvoiceModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`http://localhost:8080/api/invoices/${id}`, "Tagihan dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!")}
             />
           </div>
         );
@@ -449,6 +445,8 @@ export default function DashboardPage() {
         isAdmin={isAdmin}
         onLogout={() => {
           Cookies.remove("token");
+          Cookies.remove("role");
+          Cookies.remove("refresh_token");
           router.push("/login");
         }}
         isCollapsed={isSidebarCollapsed}
@@ -510,7 +508,31 @@ export default function DashboardPage() {
         isOpen={isTeamModalOpen}
         onClose={() => setIsTeamModalOpen(false)}
         onSubmit={async (e) => {
-          /* Handle Submit Team Logic */
+          e.preventDefault();
+          setIsSubmittingTeam(true);
+
+          try {
+            const url = editingTeam ? `${process.env.NEXT_PUBLIC_API_URL}/api/teams/${editingTeam.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/teams/`;
+            const method = editingTeam ? "PUT" : "POST";
+
+            // Menggunakan fetchWithAuth
+            const res = await fetchWithAuth(url, {
+              method,
+              body: JSON.stringify(teamFormData), // Header Content-Type otomatis diurus
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.error || "Gagal menyimpan data tim");
+
+            toast.success(editingTeam ? "Data anggota diperbarui!" : "Anggota baru ditambahkan!");
+            fetchData(); // Langsung refresh tabel di latar belakang
+            setIsTeamModalOpen(false);
+          } catch (err: any) {
+            toast.error(err.message);
+          } finally {
+            setIsSubmittingTeam(false);
+          }
         }}
         isSubmitting={isSubmittingTeam}
         formData={teamFormData}
