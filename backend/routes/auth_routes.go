@@ -13,6 +13,7 @@ func SetupAuthRoutes(r *gin.Engine) {
 		// Rute Publik (Tidak butuh token JWT)
 		authGroup.POST("/register", controllers.Register)
 		authGroup.POST("/login", controllers.Login)
+		authGroup.POST("/refresh", controllers.RefreshToken)
 
 		// Rute Privat (Wajib membawa token JWT)
 		protected := authGroup.Group("/")

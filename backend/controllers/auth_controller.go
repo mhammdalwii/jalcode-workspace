@@ -4,12 +4,41 @@ import (
 	"jalcode-api/config"
 	"jalcode-api/dto"
 	"jalcode-api/models"
-	"jalcode-api/utils"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// --- FUNGSI BANTUAN UNTUK MEMBUAT 2 TOKEN ---
+func generateTokens(user models.TeamMember) (string, string, error) {
+	//  Access Token (Umur Pendek: 15 Menit)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":   user.ID,
+		"role": user.Role,
+		"exp":  time.Now().Add(time.Minute * 15).Unix(),
+	})
+	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", "", err
+	}
+
+	// Buat Refresh Token (Umur Panjang: 7 Hari)
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  user.ID,
+		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
+	})
+	// Menggunakan Secret khusus untuk Refresh Token
+	refreshTokenString, err := refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_SECRET")))
+	if err != nil {
+		return "", "", err
+	}
+
+	return accessTokenString, refreshTokenString, nil
+}
 
 // @Summary Register member baru
 // @Description Mendaftarkan anggota tim baru ke dalam sistem
@@ -20,7 +49,7 @@ import (
 // @Success 200 {object} map[string]interface{}
 // @Router /api/auth/register [post]
 func Register(c *gin.Context) {
-	var req dto.RegisterRequest 
+	var req dto.RegisterRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Input tidak valid: " + err.Error()})
@@ -32,8 +61,6 @@ func Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
 		return
 	}
-
-	//  data dari DTO ke Model
 
 	user := models.TeamMember{
 		Name:     req.Name,
@@ -51,7 +78,7 @@ func Register(c *gin.Context) {
 }
 
 // @Summary Login pengguna
-// @Description Melakukan autentikasi menggunakan email dan password untuk mendapatkan token JWT
+// @Description Melakukan autentikasi menggunakan email dan password untuk mendapatkan Access dan Refresh Token
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -59,37 +86,93 @@ func Register(c *gin.Context) {
 // @Success 200 {object} map[string]interface{} "Berhasil login & mendapat token"
 // @Router /api/auth/login [post]
 func Login(c *gin.Context) {
-    var input dto.LoginRequest
+	var input dto.LoginRequest
 
-    if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	//  Cari user di database berdasarkan email
 	var user models.TeamMember
 	if err := config.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email atau password salah!"})
 		return
 	}
 
-	//  Cocokkan password yang dikirim dengan hash di database
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email atau password salah!"})
 		return
 	}
 
-	//  Jika cocok, buatkan Token JWT
-	token, err := utils.GenerateToken(user.ID, user.Role)
+	// Gunakan fungsi bantuan baru untuk mencetak 2 token
+	accessToken, refreshToken, err := generateTokens(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat token"})
 		return
 	}
 
-	// Kirim token ke frontend
+	// Kirim token dan data user ke frontend
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Login berhasil!",
-		"token":   token,
+		"message":       "Login berhasil!",
+		"token":         accessToken,
+		"refresh_token": refreshToken,
+		"user": gin.H{
+			"id":   user.ID,
+			"name": user.Name,
+			"role": user.Role,
+		},
+	})
+}
+
+// @Summary Refresh Token
+// @Description Mendapatkan token akses baru menggunakan refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body map[string]string true "Format: {\"refresh_token\": \"string\"}"
+// @Success 200 {object} map[string]interface{} "Berhasil mendapat token baru"
+// @Router /api/auth/refresh [post]
+func RefreshToken(c *gin.Context) {
+	var input struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Refresh token diperlukan"})
+		return
+	}
+
+	// Validasi Refresh Token
+	token, err := jwt.Parse(input.RefreshToken, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_REFRESH_SECRET")), nil
+	})
+
+	if err != nil || !token.Valid {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Refresh token tidak valid atau kedaluwarsa"})
+		return
+	}
+
+	// Ekstrak ID
+	claims, _ := token.Claims.(jwt.MapClaims)
+	userID := claims["id"]
+
+	// Cek database untuk melihat apakah user masih ada dan ambil Role terbarunya
+	var user models.TeamMember
+	if err := config.DB.First(&user, userID).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User tidak ditemukan di sistem"})
+		return
+	}
+
+	// Cetak token baru dengan Role yang mungkin sudah diperbarui
+	newAccessToken, newRefreshToken, err := generateTokens(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memuat ulang token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"token":         newAccessToken,
+		"refresh_token": newRefreshToken,
 	})
 }
 
@@ -101,14 +184,12 @@ func Login(c *gin.Context) {
 // @Security BearerAuth
 // @Router /api/auth/update-password [put]
 func UpdatePassword(c *gin.Context) {
-	//  User dari Token menggunakan kunci "id"
 	userIDObj, exists := c.Get("id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Anda belum login"})
 		return
 	}
 
-	//  JWT membaca angka sebagai float64, kita ubah ke uint
 	var userID uint
 	switch v := userIDObj.(type) {
 	case float64:
@@ -117,7 +198,6 @@ func UpdatePassword(c *gin.Context) {
 		userID = v
 	}
 
-	//  Input dari Frontend
 	var req struct {
 		CurrentPassword string `json:"current_password" binding:"required"`
 		NewPassword     string `json:"new_password" binding:"required,min=8"`
@@ -128,21 +208,18 @@ func UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	//  Data User di Database (Pakai tabel TeamMember)
 	var user models.TeamMember
 	if err := config.DB.First(&user, userID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Pengguna tidak ditemukan"})
 		return
 	}
 
-	//  Verifikasi Password Saat Ini (Bcrypt)
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword))
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password saat ini salah!"})
 		return
 	}
 
-	// Enkripsi dan Simpan Password Baru
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengenkripsi password"})
