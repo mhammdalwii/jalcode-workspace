@@ -4,6 +4,7 @@ import (
 	"jalcode-api/config"
 	"jalcode-api/models"
 	"jalcode-api/routes"
+	"log"
 	"net/http"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"golang.org/x/crypto/bcrypt"
 
 	_ "jalcode-api/docs"
 )
@@ -28,6 +30,24 @@ func main() {
 	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
 	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{}, &models.ActivityLog{}, &models.ContentPlan{}, &models.Invoice{}, &models.AgencyProfile{})
 	
+	var count int64
+	config.DB.Model(&models.TeamMember{}).Count(&count)
+	if count == 0 {
+		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("jalcode123"), bcrypt.DefaultCost)
+		
+		admin := models.TeamMember{
+			Name:     "Muhammad Alwi",
+			Email:    "admin@jalcode.com",
+			Password: string(hashedPassword),
+			Role:     "Founder",
+		}
+		
+		if err := config.DB.Create(&admin).Error; err != nil {
+			log.Println("⚠️ Gagal membuat akun default:", err)
+		} else {
+			log.Println("✅ Akun Founder default berhasil disuntikkan ke Database Neon!")
+		}
+	}
 
 	r := gin.Default()
 	r.Static("/uploads", "./uploads")
