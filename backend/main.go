@@ -55,7 +55,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		//  frontend Next.js/React yang biasanya jalan di port 3000
 		// Jika nanti sudah deploy, ganti dengan domain aslimu (misal: "https://jalcode.com")
-		AllowOrigins:     []string{"http://localhost:3000", "https://jalcode-workspace.vercel.app"},
+		AllowOrigins:     []string{"http://localhost:3000", "https://jalcode-workspace.vercel.app", "https://workspace.jalcode.id"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
