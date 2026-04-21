@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  jalcode-backend:
+    build: .
+    container_name: jalcode-api-server
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    networks:
+      - jalcode-network
+
+networks:
+  jalcode-network:
+    driver: bridge
