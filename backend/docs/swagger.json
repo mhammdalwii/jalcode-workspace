@@ -1,4 +1,8 @@
 {
+    "schemes": [
+        "https",
+        "http"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.",
@@ -6,7 +10,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "api.jalcode.id",
     "basePath": "/",
     "paths": {
         "/api/activities": {
