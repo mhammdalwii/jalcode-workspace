@@ -20,7 +20,7 @@ jobs:
           port: 22
           script: |
             echo "Memulai proses Deployment Otomatis 🚀"
-            cd /root/jalcode-workspace/backend
+            cd /root/jalcode-workspace
 
             # Tarik kode terbaru dari GitHub
             git pull origin main
