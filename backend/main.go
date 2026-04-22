@@ -20,8 +20,9 @@ import (
 // @title Jalcode API Documentation
 // @version 1.0
 // @description REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.
-// @host localhost:8080
+// @host api.jalcode.id
 // @BasePath /
+// @schemes https http
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
