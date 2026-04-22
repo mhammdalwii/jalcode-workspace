@@ -64,7 +64,7 @@ func main() {
 	}))
 
 	r.GET("/api/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "Server Go berjalan lancar 🚀"})
+		c.JSON(http.StatusOK, gin.H{"message": "Server Go berjalan lancar! Robot CI/CD Jalcode Aktif 🤖🚀"})
 	})
 
 	// route tim 
