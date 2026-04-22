@@ -1,6 +1,5 @@
 name: Deploy Backend to VPS
 
-# Robot ini hanya akan bekerja jika ada push ke branch "main"
 on:
   push:
     branches:
@@ -11,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Eksekusi Perintah di VPS via SSH
-        # Kita menggunakan alat industri "appleboy/ssh-action"
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -19,14 +17,21 @@ jobs:
           password: ${{ secrets.VPS_PASSWORD }}
           port: 22
           script: |
+            # MANTRA BARU: Hentikan robot seketika jika ada error sekecil apapun!
+            set -e 
+
             echo "Memulai proses Deployment Otomatis 🚀"
             cd /root/jalcode-workspace
 
-            # Tarik kode terbaru dari GitHub
-            git pull origin main
+            # MANTRA BARU: Sinkronisasi Paksa! Abaikan konflik, ikuti 100% kode dari GitHub
+            git fetch origin
+            git reset --hard origin/main
 
-            # Matikan dan Rakit ulang mesin Docker
+            # Masuk ke ruang mesin
+            cd backend
+
+            echo "Merakit ulang Docker..."
             docker compose down
             docker compose up -d --build
 
-            echo "Deployment Berhasil! API sudah terupdate ✅"
+            echo "Deployment Berhasil Mutlak! API sudah terupdate ✅"
