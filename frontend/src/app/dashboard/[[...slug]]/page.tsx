@@ -10,7 +10,7 @@ import dynamic from "next/dynamic";
 
 import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice } from "@/types";
 import { isAdminOrFounder } from "@/utils/auth";
-import { fetchWithAuth } from "@/utils/fetchApi"; // 👇 Alat bantu Fetch Pintar kita
+import { fetchWithAuth } from "@/utils/fetchApi";
 
 // --- KOMPONEN IMPORT ---
 import ProjectTable from "@/components/tables/ProjectTable";
@@ -37,23 +37,38 @@ import CredentialPanel from "@/components/ui/CredentialPanel";
 import ContentModal from "@/components/ui/ContentModal";
 import InvoiceModal from "@/components/ui/InvoiceModal";
 import TeamModal from "@/components/ui/TeamModal";
+import useSWR from "swr";
+
+const fetcher = async (url: string) => {
+  const res = await fetchWithAuth(url);
+  const text = await res.text();
+  return text ? JSON.parse(text) : { data: [] };
+};
 
 export default function DashboardPage() {
   const router = useRouter();
   const params = useParams();
   const slug = params?.slug?.[0];
 
-  // --- STATE UTAMA ---
-  const [teams, setTeams] = useState<TeamMember[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [mentees, setMentees] = useState<Mentee[]>([]);
-  const [contents, setContents] = useState<ContentPlan[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [agencyProfile, setAgencyProfile] = useState<any>(null);
+  const { data: teamsRes, mutate: mutateTeams } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/`, fetcher);
+  const { data: projectsRes, mutate: mutateProjects } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/`, fetcher);
+  const { data: clientsRes, mutate: mutateClients } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/`, fetcher);
+  const { data: menteesRes, mutate: mutateMentees } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`, fetcher);
+  const { data: contentsRes, mutate: mutateContents } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/`, fetcher);
+  const { data: invoicesRes, mutate: mutateInvoices } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`, fetcher);
+  const { data: agencyRes, mutate: mutateAgency } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`, fetcher);
 
-  const [isLoading, setIsLoading] = useState(true);
+  // --- STATE UTAMA ---
+  const teams: TeamMember[] = teamsRes?.data || [];
+  const projects: Project[] = projectsRes?.data || [];
+  const clients: Client[] = clientsRes?.data || [];
+  const mentees: Mentee[] = menteesRes?.data || [];
+  const contents: ContentPlan[] = contentsRes?.data || [];
+  const invoices: Invoice[] = invoicesRes?.data || [];
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const agencyProfile = agencyRes?.data || null;
+
+  const isLoading = !teamsRes && !projectsRes && !clientsRes && !menteesRes && !contentsRes && !invoicesRes && !agencyRes;
   const [isAdmin, setIsAdmin] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
 
@@ -120,7 +135,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsAdmin(isAdminOrFounder());
-    fetchData();
   }, [router]);
 
   // --- FUNGSI FETCH ---
@@ -134,36 +148,8 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchData = async () => {
-    try {
-      // Menggunakan fetchWithAuth, tidak perlu lagi repot mengatur header Authorization
-      const [teamsRes, projectsRes, clientsRes, menteesRes, contentsRes, invoicesRes, agencyRes] = await Promise.all([
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/`),
-        fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`),
-      ]);
-
-      setTeams((await teamsRes.json()).data || []);
-      const pText = await projectsRes.text();
-      setProjects(pText ? JSON.parse(pText).data || [] : []);
-      setClients((await clientsRes.json()).data || []);
-      setMentees((await menteesRes.json()).data || []);
-      setContents((await contentsRes.json()).data || []);
-      setInvoices((await invoicesRes.json()).data || []);
-      setAgencyProfile((await agencyRes.json()).data);
-    } catch (err) {
-      toast.error("Gagal memuat data dari server");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // --- FUNGSI HAPUS ---
-  const deleteData = async (url: string, successMsg: string) => {
+  const deleteData = async (url: string, successMsg: string, updateLocalState: () => void) => {
     if (!confirm(`Yakin ingin menghapus data ini?`)) return;
     try {
       const res = await fetchWithAuth(url, { method: "DELETE" });
@@ -172,7 +158,8 @@ export default function DashboardPage() {
         throw new Error(data.error || "Gagal menghapus data");
       }
       toast.success(successMsg);
-      fetchData();
+
+      updateLocalState();
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -243,7 +230,7 @@ export default function DashboardPage() {
                     setEditingProject(p);
                     setIsProjectModalOpen(true);
                   }}
-                  onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!")}
+                  onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects)}
                 />
               ) : (
                 <div className="p-4 overflow-x-auto">
@@ -254,9 +241,9 @@ export default function DashboardPage() {
                       setEditingProject(p);
                       setIsProjectModalOpen(true);
                     }}
-                    onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!")}
+                    onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects)}
                     onStatusChange={async () => {
-                      fetchData();
+                      mutateProjects();
                     }}
                     onOpenDetail={(p) => {
                       setSelectedProject(p);
@@ -290,7 +277,7 @@ export default function DashboardPage() {
                 setEditingClient(c);
                 setIsClientModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${id}`, "Klien dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${id}`, "Klien dihapus!", mutateClients)}
               onOpenVault={(c) => {
                 setSelectedClientForVault(c);
                 setIsCredentialPanelOpen(true);
@@ -322,7 +309,7 @@ export default function DashboardPage() {
                 setTeamFormData({ name: t.name, role: t.role, email: t.email, password: "" });
                 setIsTeamModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}`, "Anggota dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}`, "Anggota dihapus!", mutateTeams)}
             />
           </div>
         );
@@ -349,7 +336,7 @@ export default function DashboardPage() {
                 setEditingMentee(m);
                 setIsMenteeModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${id}`, "Peserta dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${id}`, "Peserta dihapus!", mutateMentees)}
             />
           </div>
         );
@@ -375,9 +362,9 @@ export default function DashboardPage() {
                 setEditingContent(c);
                 setIsContentModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!", mutateContents)}
               onStatusChange={async () => {
-                fetchData();
+                mutateContents();
               }}
             />
           </div>
@@ -405,7 +392,7 @@ export default function DashboardPage() {
                 setEditingInvoice(inv);
                 setIsInvoiceModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!")}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!", mutateInvoices)}
             />
           </div>
         );
@@ -413,7 +400,7 @@ export default function DashboardPage() {
       case "settings":
         return (
           <div className="animate-in fade-in duration-500">
-            <SettingsView onSuccess={fetchData} />
+            <SettingsView onSuccess={mutateAgency} />
           </div>
         );
 
@@ -500,10 +487,10 @@ export default function DashboardPage() {
       </div>
 
       {/* SEMUA MODAL BERADA DI BAWAH SINI */}
-      <ProjectDetailPanel isOpen={isDetailPanelOpen} onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={fetchData} />
-      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={fetchData} teams={teams} editData={editingProject} clients={clients} />
-      <ClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={fetchData} editData={editingClient} />
-      <MenteeModal isOpen={isMenteeModalOpen} onClose={() => setIsMenteeModalOpen(false)} onSuccess={fetchData} teams={teams} editData={editingMentee} />
+      <ProjectDetailPanel isOpen={isDetailPanelOpen} onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={mutateProjects} />
+      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={mutateProjects} teams={teams} editData={editingProject} clients={clients} />
+      <ClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={mutateClients} editData={editingClient} />
+      <MenteeModal isOpen={isMenteeModalOpen} onClose={() => setIsMenteeModalOpen(false)} onSuccess={mutateMentees} teams={teams} editData={editingMentee} />
       <TeamModal
         isOpen={isTeamModalOpen}
         onClose={() => setIsTeamModalOpen(false)}
@@ -515,18 +502,17 @@ export default function DashboardPage() {
             const url = editingTeam ? `${process.env.NEXT_PUBLIC_API_URL}/api/teams/${editingTeam.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/teams/`;
             const method = editingTeam ? "PUT" : "POST";
 
-            // Menggunakan fetchWithAuth
             const res = await fetchWithAuth(url, {
               method,
-              body: JSON.stringify(teamFormData), // Header Content-Type otomatis diurus
+              body: JSON.stringify(teamFormData),
             });
 
             const data = await res.json();
-
             if (!res.ok) throw new Error(data.error || "Gagal menyimpan data tim");
 
             toast.success(editingTeam ? "Data anggota diperbarui!" : "Anggota baru ditambahkan!");
-            fetchData(); // Langsung refresh tabel di latar belakang
+            mutateTeams();
+
             setIsTeamModalOpen(false);
           } catch (err: any) {
             toast.error(err.message);
@@ -541,8 +527,8 @@ export default function DashboardPage() {
       />
       <ActivityPanel isOpen={isActivityPanelOpen} onClose={() => setIsActivityPanelOpen(false)} activities={activities} />
       <CredentialPanel isOpen={isCredentialPanelOpen} onClose={() => setIsCredentialPanelOpen(false)} client={selectedClientForVault} />
-      <ContentModal isOpen={isContentModalOpen} onClose={() => setIsContentModalOpen(false)} onSuccess={fetchData} editData={editingContent} teams={teams} />
-      <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} onSuccess={fetchData} editData={editingInvoice} projects={projects} />
+      <ContentModal isOpen={isContentModalOpen} onClose={() => setIsContentModalOpen(false)} onSuccess={mutateContents} editData={editingContent} teams={teams} />
+      <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} onSuccess={mutateInvoices} editData={editingInvoice} projects={projects} />
     </div>
   );
 }
