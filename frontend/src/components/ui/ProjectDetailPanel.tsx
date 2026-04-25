@@ -2,8 +2,8 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState, useRef } from "react";
 import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, Loader2, Eye } from "lucide-react";
-import Cookies from "js-cookie";
 import toast from "react-hot-toast";
+import { fetchWithAuth } from "@/utils/fetchApi";
 import { Project, Task, Attachment } from "@/types";
 
 interface ProjectDetailPanelProps {
@@ -21,19 +21,21 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   if (!isOpen || !project) return null;
 
-  // FUNGSI TASK (TO-DO LIST)
+  // --- FUNGSI TASK (TO-DO LIST) ---
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
     setIsLoadingTask(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/`, {
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ project_id: project.id, title: newTaskTitle }),
       });
+
       if (!res.ok) throw new Error("Gagal menambah tugas");
+
       setNewTaskTitle("");
       onRefresh();
     } catch (err: any) {
@@ -45,9 +47,9 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   const handleToggleStatus = async (task: Task) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}/status`, {
+      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${task.id}/status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_done: !task.is_done }),
       });
       onRefresh();
@@ -58,9 +60,8 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   const handleDeleteTask = async (taskId: number) => {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}`, {
+      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });
       onRefresh();
     } catch (err) {
@@ -73,39 +74,45 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 🛡️ VALIDASI LAPIS 1 (Maksimal 5 MB)
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("Ukuran file terlalu besar! Maksimal 5 MB.");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setIsUploading(true);
 
-    // Gunakan FormData untuk mengirim file fisik
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
         method: "POST",
-        headers: {
-          // Jangan set Content-Type untuk FormData, biarkan browser yang atur boundary-nya!
-          Authorization: `Bearer ${Cookies.get("token")}`,
-        },
         body: formData,
       });
 
-      if (!res.ok) throw new Error("Gagal mengunggah file");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Gagal mengunggah file");
+      }
+
       toast.success("File berhasil dilampirkan!");
-      onRefresh(); // Tarik ulang data agar file muncul di UI
+      onRefresh();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
   const handleDeleteAttachment = async (id: number) => {
     if (!confirm("Hapus lampiran ini?")) return;
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/attachments/${id}`, {
+      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/attachments/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${Cookies.get("token")}` },
       });
       toast.success("Lampiran dihapus");
       onRefresh();
@@ -114,7 +121,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     }
   };
 
-  // Kalkulasi Progres Task
+  // --- KALKULASI PROGRES ---
   const totalTasks = project.tasks?.length || 0;
   const completedTasks = project.tasks?.filter((t) => t.is_done).length || 0;
   const progressPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
@@ -189,7 +196,6 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-gray-800">Lampiran & Dokumen</h3>
 
-              {/* Tombol Upload Tersembunyi (Trigger lewat onClick) */}
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
               <button onClick={() => fileInputRef.current?.click()} disabled={isUploading} className="flex items-center gap-1 text-sm text-blue-600 font-medium hover:text-blue-800 disabled:opacity-50">
                 {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Paperclip size={16} />}
@@ -199,13 +205,11 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
             <div className="grid grid-cols-1 gap-3">
               {project.attachments?.map((file: Attachment) => {
-                // Tentukan ikon berdasarkan ekstensi file
                 const isImage = file.file_type.match(/\.(jpeg|jpg|gif|png|webp)$/i);
 
                 return (
                   <div key={file.id} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:shadow-sm transition-all group bg-white">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      {/* PREVIEW GAMBAR ATAU IKON DOKUMEN */}
                       {isImage ? (
                         <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="shrink-0 block" title="Lihat Gambar Penuh">
                           <img src={file.file_url} alt={file.file_name} className="w-10 h-10 object-cover rounded-md border border-gray-200 hover:opacity-80 transition" />
@@ -225,11 +229,9 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
                     </div>
 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {/* TOMBOL REVIEW/LIHAT (Buka di Tab Baru) */}
                       <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={isImage ? "Lihat Penuh" : "Baca Dokumen"}>
                         <Eye size={16} />
                       </a>
-
                       <button onClick={() => handleDeleteAttachment(file.id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Hapus">
                         <Trash2 size={16} />
                       </button>
