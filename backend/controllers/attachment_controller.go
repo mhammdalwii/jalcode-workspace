@@ -34,6 +34,12 @@ func UploadAttachment(c *gin.Context) {
 		return
 	}
 
+	const MaxFileSize = 5 << 20 
+	if file.Size > MaxFileSize {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{"error": "Ukuran file terlalu besar! Maksimal 5 MB."})
+		return
+	}
+
 	// Buat nama file 
 	ext := filepath.Ext(file.Filename)
 	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
@@ -84,3 +90,4 @@ func DeleteAttachment(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "File berhasil dihapus dari proyek"})
 }
+
