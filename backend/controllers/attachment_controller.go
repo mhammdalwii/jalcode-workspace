@@ -5,6 +5,7 @@ import (
 	"jalcode-api/config"
 	"jalcode-api/models"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -33,22 +34,28 @@ func UploadAttachment(c *gin.Context) {
 		return
 	}
 
-	// Buat nama file unik agar tidak bentrok (gunakan timestamp)
+	// Buat nama file 
 	ext := filepath.Ext(file.Filename)
 	newFileName := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
 	savePath := filepath.Join("uploads", newFileName)
 
-	// Simpan file ke folder lokal "uploads"
+	// Simpan file ke folder lokal "uploads" di dalam kontainer
 	if err := c.SaveUploadedFile(file, savePath); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan file ke server"})
 		return
 	}
 
-	// Simpan catatan ke Database
+	// Otomatis Lingkungan (Lokal vs Produksi)
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080"
+	}
+
+	// Simpan catatan ke Database dengan URL yang dinamis
 	attachment := models.Attachment{
 		ProjectID: uint(projectID),
 		FileName:  file.Filename,
-		FileURL:   "http://localhost:8080/uploads/" + newFileName, 
+		FileURL:   baseURL + "/uploads/" + newFileName,
 		FileType:  ext,
 	}
 
@@ -74,8 +81,6 @@ func DeleteAttachment(c *gin.Context) {
 
 	// Hapus catatan dari Database
 	config.DB.Delete(&attachment)
-	// Catatan: Idealnya kita juga menghapus file fisik di folder menggunakan os.Remove(), 
-	// tapi untuk MVP, hapus dari database saja sudah cukup.
 
 	c.JSON(http.StatusOK, gin.H{"message": "File berhasil dihapus dari proyek"})
 }
