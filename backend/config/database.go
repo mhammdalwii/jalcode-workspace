@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
@@ -13,25 +14,19 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	// baca file .env, tapi JANGAN gunakan log.Fatal.
-	// Di server produksi (Docker/Render), file .env memang tidak ada, 
-	// menggunakan Environment Variables bawaan server.
+	// baca file .env
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("⚠️ Info: File .env tidak ditemukan, menggunakan Environment Variable dari OS.")
 	}
 
 	var dsn string
-
-	//  Cek apakah ada DATABASE_URL (Format URL panjang dari Neon.tech / Render)
 	databaseUrl := os.Getenv("DATABASE_URL")
 
 	if databaseUrl != "" {
-		// Gunakan URL langsung jika berada di server / mode cloud
 		dsn = databaseUrl
 		log.Println("☁️ Menghubungkan ke Cloud Database (Neon.tech)...")
 	} else {
-		// Fallback ke localhost jika DATABASE_URL kosong
 		dsn = "host=" + os.Getenv("DB_HOST") +
 			" user=" + os.Getenv("DB_USER") +
 			" password=" + os.Getenv("DB_PASSWORD") +
@@ -41,12 +36,27 @@ func ConnectDatabase() {
 		log.Println("💻 Menghubungkan ke Local Database...")
 	}
 
-	//  koneksi menggunakan GORM
+	// koneksi menggunakan GORM
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal("❌ Gagal koneksi ke database: ", err)
 	}
 
 	DB = database
+
+	// CONNECTION POOLING (Mencegah Data Kosong/Flickering)
+	sqlDB, err := DB.DB()
+	if err == nil {
+		// Mengatur berapa banyak koneksi yang tetap terbuka (standby)
+		sqlDB.SetMaxIdleConns(10)
+		
+		sqlDB.SetMaxOpenConns(50)
+		sqlDB.SetConnMaxLifetime(time.Minute * 30)
+		
+		log.Println("⚡ Connection Pool Berhasil Diaktifkan!")
+	} else {
+		log.Println("⚠️ Gagal mengatur Connection Pool:", err)
+	}
+
 	log.Println("✅ Koneksi PostgreSQL Berhasil!")
 }
