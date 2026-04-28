@@ -1616,7 +1616,7 @@
             "required": [
                 "category",
                 "status",
-                "team_member_id",
+                "team_member_ids",
                 "title"
             ],
             "properties": {
@@ -1629,8 +1629,11 @@
                 "status": {
                     "type": "string"
                 },
-                "team_member_id": {
-                    "type": "integer"
+                "team_member_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "title": {
                     "type": "string"

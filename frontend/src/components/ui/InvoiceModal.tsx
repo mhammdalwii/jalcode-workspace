@@ -9,7 +9,7 @@ interface InvoiceModalProps {
   onClose: () => void;
   onSuccess: () => void;
   editData: Invoice | null;
-  projects: Project[]; // Kita butuh data proyek untuk dropdown
+  projects: Project[];
 }
 
 export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, projects }: InvoiceModalProps) {

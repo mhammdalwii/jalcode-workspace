@@ -30,9 +30,7 @@ export const projectSchema = z.object({
   client_id: z.string().optional(),
   category: z.string().min(1, { message: "Kategori wajib dipilih" }),
   status: z.string().min(1, { message: "Status wajib dipilih" }),
-  team_member_id: z.string().refine((val) => val !== "" && val !== "0", {
-    message: "PIC (Penanggung Jawab) wajib dipilih",
-  }),
+  team_member_ids: z.array(z.number()).min(1, "Pilih minimal 1 PIC untuk proyek ini"),
 });
 
 export type ProjectFormValues = z.infer<typeof projectSchema>;

@@ -20,22 +20,23 @@ import (
 func GetProjects(c *gin.Context) {
 	var projects []models.Project
 
-	//   data dari DB beserta relasi Tim, Klien, Tasks, dan Attachments
-	if err := config.DB.Preload("TeamMember").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects).Error; err != nil {
+	// UBAH PRELOAD: Dari "TeamMember" menjadi "TeamMembers"
+	if err := config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data proyek"})
 		return
 	}
 
-	//  array kosong untuk DTO hasil akhir
 	var projectResponses []dto.ProjectResponse
 
-	//  Perulangan untuk memetakan data
 	for _, p := range projects {
-		pic := dto.TeamMemberResponse{
-			ID:    p.TeamMember.ID,
-			Name:  p.TeamMember.Name,
-			Role:  p.TeamMember.Role,
-			Email: p.TeamMember.Email,
+		var pics []dto.TeamMemberResponse
+		for _, member := range p.TeamMembers {
+			pics = append(pics, dto.TeamMemberResponse{
+				ID:    member.ID,
+				Name:  member.Name,
+				Role:  member.Role,
+				Email: member.Email,
+			})
 		}
 
 		var taskResponses []dto.TaskResponse
@@ -65,7 +66,7 @@ func GetProjects(c *gin.Context) {
 			Title:       p.Title,
 			Category:    p.Category,
 			Status:      p.Status,
-			PIC:         pic,
+			PICs:        pics, 
 			Client:      p.Client,
 			Tasks:       taskResponses,
 			Attachments: attachmentResponses,
@@ -74,7 +75,6 @@ func GetProjects(c *gin.Context) {
 		projectResponses = append(projectResponses, projectResponse)
 	}
 
-	//  array DTO yang sudah bersih ke frontend
 	c.JSON(http.StatusOK, gin.H{
 		"data": projectResponses,
 	})
@@ -96,15 +96,24 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
-	input := models.Project{
-		Title:        req.Title,
-		Category:     req.Category,
-		Status:       req.Status,
-		TeamMemberID: req.TeamMemberID,
-		ClientID:     req.ClientID,
+
+	var teamMembers []models.TeamMember
+	if len(req.TeamMemberIDs) > 0 {
+		config.DB.Where("id IN ?", req.TeamMemberIDs).Find(&teamMembers)
 	}
 
-	config.DB.Create(&input)
+	input := models.Project{
+		Title:       req.Title,
+		Category:    req.Category,
+		Status:      req.Status,
+		ClientID:    req.ClientID,
+		TeamMembers: teamMembers, 
+	}
+
+	if err := config.DB.Create(&input).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan ke database: " + err.Error()})
+		return
+	}
 
 	// CATAT AKTIVITAS
 	userIDObj, exists := c.Get("id")
@@ -141,7 +150,6 @@ func UpdateProject(c *gin.Context) {
 		return
 	}
 
-	// Simpan status lama sebelum diupdate untuk perbandingan
 	oldStatus := project.Status
 
 	var req dto.ProjectRequest
@@ -150,14 +158,27 @@ func UpdateProject(c *gin.Context) {
 		return
 	}
 
+	// Update data primitif
 	project.Title = req.Title
 	project.Category = req.Category
 	project.Status = req.Status
-	project.TeamMemberID = req.TeamMemberID
 	project.ClientID = req.ClientID
 
-	config.DB.Save(&project)
-	config.DB.Preload("TeamMember").Preload("Client").First(&project, id)
+	if err := config.DB.Save(&project).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui database: " + err.Error()})
+		return
+	}
+
+	// relasi anggota tim (Replace Association)
+	var newTeamMembers []models.TeamMember
+	if len(req.TeamMemberIDs) > 0 {
+		config.DB.Where("id IN ?", req.TeamMemberIDs).Find(&newTeamMembers)
+	}
+	// Perintah Replace ini akan menghapus PIC lama dan memasukkan PIC baru di pivot table
+	config.DB.Model(&project).Association("TeamMembers").Replace(newTeamMembers)
+
+	// Tarik data ulang untuk dikirim sebagai respon
+	config.DB.Preload("TeamMembers").Preload("Client").First(&project, id)
 
 	// CATAT AKTIVITAS
 	userIDObj, exists := c.Get("id")
@@ -179,7 +200,6 @@ func UpdateProject(c *gin.Context) {
 		}
 	}
 
-	// HANYA ADA SATU c.JSON DI SINI
 	c.JSON(http.StatusOK, gin.H{"message": "Data proyek berhasil diperbarui!", "data": project})
 }
 
@@ -200,7 +220,7 @@ func DeleteProject(c *gin.Context) {
 		return
 	}
 
-	// CATAT AKTIVITAS (Sebelum datanya hilang)
+	// CATAT AKTIVITAS
 	userIDObj, exists := c.Get("id")
 	if exists {
 		var userID uint
@@ -213,6 +233,10 @@ func DeleteProject(c *gin.Context) {
 		utils.LogActivity(userID, "Menghapus proyek", project.Title)
 	}
 
+	// Hapus relasi pivot table
+	config.DB.Model(&project).Association("TeamMembers").Clear()
+	// Baru hapus proyek utamanya
 	config.DB.Delete(&project)
+
 	c.JSON(http.StatusOK, gin.H{"message": "Proyek berhasil dihapus dari sistem!"})
 }

@@ -28,7 +28,7 @@ import (
 // @name Authorization
 func main() {
 	config.ConnectDatabase()
-	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{})
+	// config.DB.Migrator().DropTable(&models.Project{}, &models.TeamMember{}, "project_team_members")
 	config.DB.AutoMigrate(&models.TeamMember{}, &models.Project{}, &models.Client{}, &models.Mentee{}, &models.Task{}, &models.Attachment{}, &models.Credential{}, &models.ActivityLog{}, &models.ContentPlan{}, &models.Invoice{}, &models.AgencyProfile{})
 	
 	var count int64
