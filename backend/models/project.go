@@ -8,8 +8,7 @@ type Project struct {
 	Title        string     `gorm:"type:varchar(150);not null" json:"title" binding:"required"`
 	Category     string     `gorm:"type:varchar(100)" json:"category" binding:"required"`
 	Status       string     `gorm:"type:varchar(50)" json:"status" binding:"required"`
-	TeamMemberID uint       `json:"team_member_id" binding:"required"` 
-	TeamMember   TeamMember `gorm:"foreignKey:TeamMemberID" json:"team_member" binding:"-"`
+	TeamMembers []TeamMember `gorm:"many2many:project_team_members;" json:"team_members"`
 	ClientID  *uint   `json:"client_id"` 
 	Client    *Client `json:"client,omitempty" gorm:"foreignKey:ClientID" binding:"-"`
 	Tasks []Task `json:"tasks" gorm:"foreignKey:ProjectID"`

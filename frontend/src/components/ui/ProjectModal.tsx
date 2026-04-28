@@ -16,11 +16,12 @@ interface ProjectModalProps {
 }
 
 export default function ProjectModal({ isOpen, onClose, onSuccess, teams, clients, editData }: ProjectModalProps) {
-  //INISIALISASI REACT HOOK FORM
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProjectFormValues>({
     resolver: zodResolver(projectSchema),
@@ -29,9 +30,12 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
       client_id: "",
       category: "Web Application",
       status: "Antrean",
-      team_member_id: "",
+      team_member_ids: [],
     },
   });
+
+  // Pantau perubahan array PIC secara realtime
+  const selectedPICs = watch("team_member_ids") || [];
 
   // AUTO-FILL SAAT MODE EDIT
   useEffect(() => {
@@ -40,8 +44,8 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
         title: editData.title,
         category: editData.category,
         status: editData.status,
-        team_member_id: editData.pic?.id ? String(editData.pic.id) : "",
         client_id: editData.client?.id ? String(editData.client.id) : "",
+        team_member_ids: editData.pics?.map((pic) => pic.id) || [],
       });
     } else {
       reset({
@@ -49,23 +53,34 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
         client_id: "",
         category: "Web Application",
         status: "Antrean",
-        team_member_id: "",
+        team_member_ids: [],
       });
     }
   }, [editData, isOpen, reset]);
 
-  // FUNGSI SUBMIT
+  // Fungsi khusus untuk Toggle (Ceklis/Unceklis) PIC
+  const handleTogglePIC = (id: number) => {
+    if (selectedPICs.includes(id)) {
+      // Jika sudah diceklis, hapus dari array
+      setValue(
+        "team_member_ids",
+        selectedPICs.filter((picId) => picId !== id),
+      );
+    } else {
+      // Jika belum, tambahkan ke array
+      setValue("team_member_ids", [...selectedPICs, id]);
+    }
+  };
+
   const onSubmit = async (data: ProjectFormValues) => {
     try {
       const token = Cookies.get("token");
       const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/projects/`;
       const method = editData ? "PUT" : "POST";
 
-      // Persiapkan data untuk backend (Convert ID kembali ke Number)
       const payload = {
         ...data,
-        client_id: data.client_id ? Number(data.client_id) : "",
-        team_member_id: Number(data.team_member_id),
+        client_id: data.client_id ? Number(data.client_id) : null,
       };
 
       const res = await fetch(url, {
@@ -79,7 +94,6 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
       toast.success(`Proyek berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
       onClose();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -89,7 +103,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
+      <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-bold mb-4 text-gray-900">{editData ? "Edit Proyek" : "Tambah Proyek Baru"}</h3>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-gray-800">
@@ -132,17 +146,21 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
             </div>
           </div>
 
+          {/* CHECKBOX ANGGOTA TIM (MULTIPLE PIC) */}
           <div>
-            <label className="block text-sm font-medium mb-1">PIC (Penanggung Jawab) *</label>
-            <select {...register("team_member_id")} className={`w-full px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 ${errors.team_member_id ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-200"}`}>
-              <option value="">-- Pilih Tim --</option>
+            <label className="block text-sm font-medium mb-2">Pilih Anggota Tim (Bisa lebih dari 1) *</label>
+            <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50/50">
               {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.role})
-                </option>
+                <label key={t.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer border border-transparent hover:border-gray-200 transition-colors">
+                  <input type="checkbox" checked={selectedPICs.includes(t.id)} onChange={() => handleTogglePIC(t.id)} className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500" />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-800">{t.name}</span>
+                    <span className="text-[10px] text-gray-500 uppercase tracking-wider">{t.role}</span>
+                  </div>
+                </label>
               ))}
-            </select>
-            {errors.team_member_id && <p className="text-red-500 text-xs mt-1">{errors.team_member_id.message}</p>}
+            </div>
+            {errors.team_member_ids && <p className="text-red-500 text-xs mt-1">{errors.team_member_ids.message}</p>}
           </div>
 
           <div className="flex gap-3 mt-6">

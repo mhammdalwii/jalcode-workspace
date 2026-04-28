@@ -8,7 +8,7 @@ ID        uint      `gorm:"primaryKey" json:"id"`
 	Role      string    `gorm:"type:varchar(50);not null" json:"role" binding:"required"` 
 	Email     string    `gorm:"type:varchar(100);unique" json:"email" binding:"required,email"`
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
-	Projects  []Project `gorm:"foreignKey:TeamMemberID" json:"projects"` 
+	Projects  []Project `gorm:"many2many:project_team_members;" json:"projects,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

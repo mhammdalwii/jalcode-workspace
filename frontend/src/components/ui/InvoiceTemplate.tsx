@@ -31,7 +31,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
         {invoice && (
           <>
             {/* KOP SURAT JALCODE TER-SINKRONISASI */}
-            <div className="flex justify-between items-start mb-12 border-b-4 border-blue-600 pb-6">
+            <div className="flex justify-between items-start mb-12 border-b-4 border-black pb-6">
               <div className="flex items-center gap-4">
                 <img src={profile.logo || "/logo/logoRemove.png"} alt="Logo Agensi" className="w-16 h-16 object-contain" crossOrigin="anonymous" />
                 <div>
@@ -119,7 +119,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
             <div className="absolute bottom-16 right-12 text-center">
               <p className="text-gray-500 mb-16">Hormat Kami,</p>
               <p className="font-bold text-gray-900 border-b border-gray-400 pb-1 inline-block px-4">{profile.name}</p>
-              <p className="text-sm text-gray-500 mt-1">Founder & CEO {profile.company}</p>
+              <p className="text-sm text-gray-500 mt-1">Founder {profile.company}</p>
             </div>
           </>
         )}

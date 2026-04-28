@@ -129,14 +129,16 @@ definitions:
         type: integer
       status:
         type: string
-      team_member_id:
-        type: integer
+      team_member_ids:
+        items:
+          type: integer
+        type: array
       title:
         type: string
     required:
     - category
     - status
-    - team_member_id
+    - team_member_ids
     - title
     type: object
   dto.RegisterRequest:

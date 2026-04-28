@@ -1618,7 +1618,7 @@ const docTemplate = `{
             "required": [
                 "category",
                 "status",
-                "team_member_id",
+                "team_member_ids",
                 "title"
             ],
             "properties": {
@@ -1631,8 +1631,11 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
-                "team_member_id": {
-                    "type": "integer"
+                "team_member_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "title": {
                     "type": "string"
