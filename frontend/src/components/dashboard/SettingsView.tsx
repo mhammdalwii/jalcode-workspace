@@ -2,9 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import { Save, Lock, User, Building, ShieldCheck, Upload, EyeOff, Eye, Info } from "lucide-react";
 import toast from "react-hot-toast";
 
-// Import prajurit pintar kita
+// 🚀 IMPORT ZOD & REACT-HOOK-FORM
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { fetchWithAuth } from "@/utils/fetchApi";
 import { isAdminOrFounder } from "@/utils/auth";
+
+// 🚀 DEFINISI SKEMA ZOD UNTUK KEAMANAN
+const securitySchema = z
+  .object({
+    currentPassword: z.string().min(1, { message: "Password saat ini wajib diisi" }),
+    newPassword: z.string().min(8, { message: "Password baru minimal 8 karakter" }),
+    confirmPassword: z.string().min(1, { message: "Konfirmasi password wajib diisi" }),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Password baru dan konfirmasi tidak cocok!",
+    path: ["confirmPassword"], // Error akan diarahkan ke field confirmPassword
+  });
+
+type SecurityFormValues = z.infer<typeof securitySchema>;
 
 interface SettingsViewProps {
   onSuccess: () => void;
@@ -12,7 +30,7 @@ interface SettingsViewProps {
 
 export default function SettingsView({ onSuccess }: SettingsViewProps) {
   const [activeSubTab, setActiveSubTab] = useState<"profile" | "security">("profile");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingProfile, setIsSubmittingProfile] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,15 +43,23 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
     logo: "/logo/logoRemove.png",
   });
 
-  const [securityData, setSecurityData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  useEffect(() => {
-    // Cek apakah user ini punya hak akses Founder/Admin
-    setIsAdmin(isAdminOrFounder());
+  // 🚀 INISIALISASI REACT HOOK FORM UNTUK SECURITY
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isSubmitting: isSubmittingSecurity },
+  } = useForm<SecurityFormValues>({
+    resolver: zodResolver(securitySchema),
+  });
 
+  useEffect(() => {
+    setIsAdmin(isAdminOrFounder());
     const fetchAgency = async () => {
       try {
         const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`);
@@ -51,18 +77,16 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
     if (file) {
       if (file.size > 2 * 1024 * 1024) return toast.error("Ukuran foto maksimal 2MB!");
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileData({ ...profileData, logo: reader.result as string });
-      };
+      reader.onloadend = () => setProfileData({ ...profileData, logo: reader.result as string });
       reader.readAsDataURL(file);
     }
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return toast.error("Hanya Admin/Founder yang dapat mengubah profil!"); // Keamanan ganda
+    if (!isAdmin) return toast.error("Hanya Admin/Founder yang dapat mengubah profil!");
 
-    setIsSubmitting(true);
+    setIsSubmittingProfile(true);
     try {
       const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/agency/`, {
         method: "PUT",
@@ -77,44 +101,37 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
     } catch (err) {
       toast.error("Koneksi ke server gagal");
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingProfile(false);
     }
   };
 
-  const handleSaveSecurity = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (securityData.newPassword !== securityData.confirmPassword) {
-      return toast.error("Password baru dan konfirmasi tidak cocok!");
-    }
-    if (securityData.newPassword.length < 8) {
-      return toast.error("Password baru minimal harus 8 karakter!");
-    }
-
-    setIsSubmitting(true);
-
+  // 🚀 FUNGSI SUBMIT PASSWORD MENGGUNAKAN HOOK FORM
+  const onSubmitSecurity = async (data: SecurityFormValues) => {
     try {
       const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/update-password`, {
         method: "PUT",
         body: JSON.stringify({
-          current_password: securityData.currentPassword,
-          new_password: securityData.newPassword,
+          current_password: data.currentPassword,
+          new_password: data.newPassword,
         }),
       });
 
-      const data = await res.json();
+      const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Terjadi kesalahan saat mengubah password");
+        // 🚀 TANGKAP ERROR DARI BACKEND JIKA PASSWORD LAMA SALAH
+        if (result.error?.toLowerCase().includes("password") || result.error?.toLowerCase().includes("salah")) {
+          setError("currentPassword", { type: "server", message: "Password saat ini tidak sesuai!" });
+          return;
+        }
+        throw new Error(result.error || "Terjadi kesalahan saat mengubah password");
       }
 
-      toast.success(data.message || "Password berhasil diubah!");
-      setSecurityData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      toast.success(result.message || "Password berhasil diubah!");
+      reset(); // Kosongkan form otomatis
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -146,7 +163,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                 <h2 className="text-2xl font-bold text-gray-900">Profil Agensi</h2>
                 <p className="text-gray-500 mt-1">Perbarui informasi dasar perusahaan dan logo yang akan tampil di Invoice.</p>
               </div>
-              {/* Notifikasi visual jika mode hanya-lihat */}
               {!isAdmin && (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-sm font-medium">
                   <Lock size={14} /> Mode Hanya Lihat
@@ -162,7 +178,6 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                 </div>
                 <div>
                   <input type="file" accept="image/*" ref={fileInputRef} onChange={handleLogoChange} className="hidden" disabled={!isAdmin} />
-
                   {isAdmin ? (
                     <>
                       <button
@@ -176,7 +191,7 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                     </>
                   ) : (
                     <p className="text-sm text-gray-500 flex items-center gap-2">
-                      <Info size={14} /> Hanya Admin yang dapat mengubah logo perusahaan.
+                      <Info size={14} /> Hanya Admin yang mengubah logo.
                     </p>
                   )}
                 </div>
@@ -229,11 +244,10 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
                 </div>
               </div>
 
-              {/* Tampilkan tombol simpan hanya untuk Admin/Founder */}
               {isAdmin && (
                 <div className="pt-4 flex justify-end">
-                  <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-                    <Save size={18} /> {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
+                  <button type="submit" disabled={isSubmittingProfile} className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+                    <Save size={18} /> {isSubmittingProfile ? "Menyimpan..." : "Simpan Perubahan"}
                   </button>
                 </div>
               )}
@@ -241,7 +255,7 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
           </div>
         )}
 
-        {/* TAB KEAMANAN - TETAP BISA DIAKSES OLEH SEMUA ROLE */}
+        {/* 🚀 TAB KEAMANAN MENGGUNAKAN ZOD & RHF */}
         {activeSubTab === "security" && (
           <div className="max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8">
@@ -249,63 +263,60 @@ export default function SettingsView({ onSuccess }: SettingsViewProps) {
               <p className="text-gray-500 mt-1">Ganti kata sandi secara berkala untuk menjaga keamanan akun Workspace Anda.</p>
             </div>
 
-            <form onSubmit={handleSaveSecurity} className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmitSecurity)} className="space-y-5">
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">
                   <Lock size={14} /> Password Saat Ini
                 </label>
                 <div className="relative">
                   <input
-                    required
                     type={showCurrent ? "text" : "password"}
-                    value={securityData.currentPassword}
-                    onChange={(e) => setSecurityData({ ...securityData, currentPassword: e.target.value })}
-                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-red-500 outline-none bg-gray-50 pr-12"
+                    {...register("currentPassword")}
+                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 outline-none bg-gray-50 pr-12 transition ${errors.currentPassword ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-500"}`}
                     placeholder="••••••••"
                   />
                   <button type="button" onClick={() => setShowCurrent(!showCurrent)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
                     {showCurrent ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {errors.currentPassword && <p className="text-red-500 text-xs mt-1 font-medium">{errors.currentPassword.message}</p>}
               </div>
 
               <div className="pt-4 border-t border-gray-100">
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Password Baru</label>
                 <div className="relative">
                   <input
-                    required
                     type={showNew ? "text" : "password"}
-                    value={securityData.newPassword}
-                    onChange={(e) => setSecurityData({ ...securityData, newPassword: e.target.value })}
-                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 pr-12"
+                    {...register("newPassword")}
+                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 outline-none bg-gray-50 pr-12 transition ${errors.newPassword ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-500"}`}
                     placeholder="Minimal 8 karakter"
                   />
                   <button type="button" onClick={() => setShowNew(!showNew)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
                     {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {errors.newPassword && <p className="text-red-500 text-xs mt-1 font-medium">{errors.newPassword.message}</p>}
               </div>
 
               <div>
                 <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-2">Konfirmasi Password Baru</label>
                 <div className="relative">
                   <input
-                    required
                     type={showConfirm ? "text" : "password"}
-                    value={securityData.confirmPassword}
-                    onChange={(e) => setSecurityData({ ...securityData, confirmPassword: e.target.value })}
-                    className="w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 pr-12"
+                    {...register("confirmPassword")}
+                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 outline-none bg-gray-50 pr-12 transition ${errors.confirmPassword ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-500"}`}
                     placeholder="Ulangi password baru"
                   />
                   <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute inset-y-0 right-0 px-4 flex items-center text-gray-400 hover:text-gray-600 transition">
                     {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 font-medium">{errors.confirmPassword.message}</p>}
               </div>
 
               <div className="pt-6">
-                <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition shadow-lg shadow-gray-200">
-                  <ShieldCheck size={18} /> {isSubmitting ? "Memperbarui..." : "Update Password"}
+                <button type="submit" disabled={isSubmittingSecurity} className="flex items-center gap-2 px-6 py-2.5 bg-gray-900 text-white font-bold rounded-xl hover:bg-black transition shadow-lg shadow-gray-200 disabled:opacity-50">
+                  <ShieldCheck size={18} /> {isSubmittingSecurity ? "Memperbarui..." : "Update Password"}
                 </button>
               </div>
             </form>

@@ -214,9 +214,9 @@ func UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword))
+err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword))
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Password saat ini salah!"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password saat ini salah!"})
 		return
 	}
 
