@@ -2,6 +2,8 @@ import { Edit, Trash2, Key } from "lucide-react";
 import { TeamMember } from "@/types";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
+import { useState } from "react";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface TeamTableProps {
   teams: TeamMember[];
@@ -11,12 +13,20 @@ interface TeamTableProps {
 }
 
 export default function TeamTable({ teams, onEdit, onDelete, isAdmin }: TeamTableProps) {
-  // Fungsi Khusus Reset Password
-  const handleResetPassword = async (id: number, name: string) => {
-    if (!window.confirm(`Yakin ingin mereset password untuk ${name}? Password barunya akan menjadi: jalcode123`)) return;
+  // 🚀 STATE UNTUK MODAL HAPUS
+  const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
 
+  // 🚀 STATE UNTUK MODAL RESET PASSWORD
+  const [resetModalData, setResetModalData] = useState<{ id: number | null; name: string }>({ id: null, name: "" });
+  const [isResetting, setIsResetting] = useState(false);
+
+  // Fungsi Eksekusi Reset Password (Dipanggil oleh Modal)
+  const executeResetPassword = async () => {
+    if (!resetModalData.id) return;
+
+    setIsResetting(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}/reset-password`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${resetModalData.id}/reset-password`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${Cookies.get("token")}`,
@@ -27,10 +37,13 @@ export default function TeamTable({ teams, onEdit, onDelete, isAdmin }: TeamTabl
 
       if (!res.ok) throw new Error(data.error || "Gagal mereset password");
 
-      toast.success(`Berhasil! Password ${name} sekarang adalah: jalcode123`, { duration: 5000 });
+      toast.success(`Berhasil! Password ${resetModalData.name} sekarang adalah: jalcode123`, { duration: 5000 });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setIsResetting(false);
+      setResetModalData({ id: null, name: "" }); // Tutup modal setelah selesai
     }
   };
 
@@ -39,49 +52,75 @@ export default function TeamTable({ teams, onEdit, onDelete, isAdmin }: TeamTabl
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500 text-sm border-b">
-            <th className="p-4 font-medium">Nama Anggota</th>
-            <th className="p-4 font-medium">Peran / Posisi</th>
-            <th className="p-4 font-medium">Email Address</th>
-            {isAdmin && <th className="p-4 font-medium text-right">Aksi</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {teams.map((t) => (
-            <tr key={t.id} className="hover:bg-gray-50 transition border-b last:border-0">
-              <td className="p-4 font-semibold text-gray-900">{t.name}</td>
-              <td className="p-4 text-sm text-gray-600">
-                <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-medium">{t.role}</span>
-              </td>
-              <td className="p-4 text-sm text-gray-600">{t.email}</td>
-
-              <td className="p-4 text-right">
-                {isAdmin && (
-                  <div className="flex justify-end gap-2 items-center">
-                    {/* TOMBOL RESET PASSWORD */}
-                    <button onClick={() => handleResetPassword(t.id, t.name)} title="Reset Password ke Default" className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-md transition">
-                      <Key size={16} />
-                    </button>
-
-                    {/* TOMBOL EDIT */}
-                    <button onClick={() => onEdit(t)} className="p-1.5 text-slate-400 hover:text-blue-600 transition">
-                      <Edit size={16} />
-                    </button>
-
-                    {/* TOMBOL HAPUS */}
-                    <button onClick={() => onDelete(t.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                )}
-              </td>
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-sm border-b">
+              <th className="p-4 font-medium">Nama Anggota</th>
+              <th className="p-4 font-medium">Peran / Posisi</th>
+              <th className="p-4 font-medium">Email Address</th>
+              {isAdmin && <th className="p-4 font-medium text-right">Aksi</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {teams.map((t) => (
+              <tr key={t.id} className="hover:bg-gray-50 transition border-b last:border-0">
+                <td className="p-4 font-semibold text-gray-900">{t.name}</td>
+                <td className="p-4 text-sm text-gray-600">
+                  <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-medium">{t.role}</span>
+                </td>
+                <td className="p-4 text-sm text-gray-600">{t.email}</td>
+
+                <td className="p-4 text-right">
+                  {isAdmin && (
+                    <div className="flex justify-end gap-2 items-center">
+                      {/* 🚀 TOMBOL RESET PASSWORD: Buka Modal */}
+                      <button onClick={() => setResetModalData({ id: t.id, name: t.name })} title="Reset Password ke Default" className="p-1.5 text-amber-500 hover:text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-md transition">
+                        <Key size={16} />
+                      </button>
+
+                      {/* TOMBOL EDIT */}
+                      <button onClick={() => onEdit(t)} className="p-1.5 text-slate-400 hover:text-blue-600 transition">
+                        <Edit size={16} />
+                      </button>
+
+                      {/* 🚀 TOMBOL HAPUS: Buka Modal */}
+                      <button onClick={() => setDeleteModalId(t.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 🚀 MODAL KONFIRMASI HAPUS ANGGOTA */}
+      <ConfirmModal
+        isOpen={deleteModalId !== null}
+        title="Hapus Anggota Tim?"
+        message="Apakah kamu yakin ingin menghapus anggota tim ini?"
+        onClose={() => setDeleteModalId(null)}
+        onConfirm={() => {
+          if (deleteModalId !== null) {
+            onDelete(deleteModalId);
+            setDeleteModalId(null);
+          }
+        }}
+      />
+
+      {/* 🚀 MODAL KONFIRMASI RESET PASSWORD */}
+      <ConfirmModal
+        isOpen={resetModalData.id !== null}
+        title="Reset Password?"
+        message={`Apakah kamu yakin ingin mereset password untuk ${resetModalData.name}?`}
+        isLoading={isResetting}
+        onClose={() => setResetModalData({ id: null, name: "" })}
+        onConfirm={executeResetPassword}
+      />
+    </>
   );
 }

@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
-import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown } from "lucide-react"; // <-- Tambah FileDown
+import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown } from "lucide-react";
 import { Invoice } from "@/types";
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
 import InvoiceTemplate from "@/components/ui/InvoiceTemplate";
 import { toPng } from "html-to-image";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -18,6 +19,9 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
   const printRef = useRef<HTMLDivElement>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
+
+  //  STATE UNTUK KONTROL MODAL HAPUS
+  const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
 
   const formatRupiah = (angka: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
   const formatDate = (date: string) => new Date(date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
@@ -36,20 +40,12 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
   // --- FUNGSI EXPORT KE CSV (EXCEL) ---
   const handleExportCSV = () => {
     try {
-      // Header Kolom
       const headers = ["No Invoice", "Nama Klien/Proyek", "Layanan", "Tenggat Waktu", "Nominal (Rp)", "Status"];
-
-      //  Petakan Data ke Baris
       const csvRows = invoices.map((inv) => {
         const clientName = inv.client_name || inv.project_title;
-        // Escape tanda kutip jika ada di nama klien
         return `"${inv.invoice_number}","${clientName.replace(/"/g, '""')}","${inv.service_type}","${formatDate(inv.due_date)}","${inv.amount}","${inv.status}"`;
       });
-
-      //  Header dan Baris dengan format pemisah koma
       const csvString = [headers.join(","), ...csvRows].join("\n");
-
-      //  Ubah menjadi file yang bisa didownload
       const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -58,7 +54,6 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
       toast.success("Data berhasil diekspor ke Excel/CSV!");
     } catch (error) {
       toast.error("Gagal mengekspor data");
@@ -99,7 +94,6 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
 
   return (
     <>
-      {/* TOMBOL EXPORT DI ATAS TABEL */}
       {isAdmin && (
         <div className="px-4 py-3 border-b border-gray-100 flex justify-end bg-gray-50/50">
           <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg hover:bg-emerald-700 transition shadow-sm">
@@ -157,7 +151,8 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
                       <button onClick={() => onEdit(inv)} className="p-1.5 text-slate-400 hover:text-blue-600 transition">
                         <Edit size={16} />
                       </button>
-                      <button onClick={() => onDelete(inv.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition">
+
+                      <button onClick={() => setDeleteModalId(inv.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -170,6 +165,19 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
       </div>
 
       <InvoiceTemplate ref={printRef} invoice={selectedInvoiceForPrint} agency={agencyProfile} />
+
+      <ConfirmModal
+        isOpen={deleteModalId !== null}
+        title="Hapus Tagihan?"
+        message="Apakah kamu yakin ingin menghapus tagihan (invoice) ini?"
+        onClose={() => setDeleteModalId(null)}
+        onConfirm={() => {
+          if (deleteModalId !== null) {
+            onDelete(deleteModalId);
+            setDeleteModalId(null);
+          }
+        }}
+      />
     </>
   );
 }

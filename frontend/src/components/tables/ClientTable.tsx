@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Edit, Trash2, Building2, User, Phone, Mail, Key } from "lucide-react";
 import { Client } from "@/types";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface ClientTableProps {
   clients: Client[];
@@ -10,62 +12,80 @@ interface ClientTableProps {
 }
 
 export default function ClientTable({ clients, onEdit, onDelete, isAdmin, onOpenVault }: ClientTableProps) {
+  const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
+
   if (!clients || clients.length === 0) {
     return <div className="p-8 text-center text-gray-500">Belum ada data klien yang tersimpan.</div>;
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500 text-sm">
-            <th className="p-4 border-b font-medium">Perusahaan</th>
-            <th className="p-4 border-b font-medium">PIC (Kontak)</th>
-            <th className="p-4 border-b font-medium">Email & Telepon</th>
-            {isAdmin && <th className="p-4 border-b font-medium text-right">Aksi</th>}
-          </tr>
-        </thead>
-        <tbody>
-          {clients.map((c) => (
-            <tr key={c.id} className="hover:bg-gray-50 transition border-b last:border-0">
-              <td className="p-4 font-medium text-gray-900 flex items-center gap-2">
-                <Building2 size={16} className="text-gray-400" />
-                {c.company}
-              </td>
-              <td className="p-4 text-gray-700 flex items-center gap-2">
-                <User size={16} className="text-gray-400" />
-                {c.name}
-              </td>
-              <td className="p-4 text-sm text-gray-600">
-                <div className="flex items-center gap-2 mb-1">
-                  <Mail size={14} className="text-gray-400" />
-                  {c.email || "-"}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone size={14} className="text-gray-400" />
-                  {c.phone || "-"}
-                </div>
-              </td>
-              <td className="p-4 text-right">
-                {isAdmin && (
-                  <div className="flex justify-end gap-4 items-center">
-                    <button onClick={() => onOpenVault(c)} className="text-emerald-500 hover:text-emerald-700 transition" title="Buka Brankas Kredensial">
-                      <Key size={18} />
-                    </button>
-
-                    <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800 transition">
-                      <Edit size={18} />
-                    </button>
-                    <button onClick={() => onDelete(c.id)} className="text-red-600 hover:text-red-800 transition">
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                )}
-              </td>
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-sm">
+              <th className="p-4 border-b font-medium">Perusahaan</th>
+              <th className="p-4 border-b font-medium">PIC (Kontak)</th>
+              <th className="p-4 border-b font-medium">Email & Telepon</th>
+              {isAdmin && <th className="p-4 border-b font-medium text-right">Aksi</th>}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {clients.map((c) => (
+              <tr key={c.id} className="hover:bg-gray-50 transition border-b last:border-0">
+                <td className="p-4 font-medium text-gray-900 flex items-center gap-2">
+                  <Building2 size={16} className="text-gray-400" />
+                  {c.company}
+                </td>
+                <td className="p-4 text-gray-700 flex items-center gap-2">
+                  <User size={16} className="text-gray-400" />
+                  {c.name}
+                </td>
+                <td className="p-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Mail size={14} className="text-gray-400" />
+                    {c.email || "-"}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Phone size={14} className="text-gray-400" />
+                    {c.phone || "-"}
+                  </div>
+                </td>
+                <td className="p-4 text-right">
+                  {isAdmin && (
+                    <div className="flex justify-end gap-4 items-center">
+                      <button onClick={() => onOpenVault(c)} className="text-emerald-500 hover:text-emerald-700 transition" title="Buka Brankas Kredensial">
+                        <Key size={18} />
+                      </button>
+
+                      <button onClick={() => onEdit(c)} className="text-blue-600 hover:text-blue-800 transition">
+                        <Edit size={18} />
+                      </button>
+
+                      <button onClick={() => setDeleteModalId(c.id)} className="text-red-600 hover:text-red-800 transition">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ConfirmModal
+        isOpen={deleteModalId !== null}
+        title="Hapus Data Klien?"
+        message="Apakah kamu yakin ingin menghapus data klien ini?"
+        onClose={() => setDeleteModalId(null)}
+        onConfirm={() => {
+          if (deleteModalId !== null) {
+            onDelete(deleteModalId);
+            setDeleteModalId(null);
+          }
+        }}
+      />
+    </>
   );
 }

@@ -60,7 +60,7 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
     const payload = {
       ...formData,
       project_id: Number(formData.project_id),
-      amount: Number(formData.amount),
+      // amount sudah otomatis berupa Number di state kita
     };
 
     try {
@@ -122,14 +122,18 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Nominal (Rp)</label>
+              {/* 🚀 SIHIR FORMAT RUPIAH ADA DI SINI */}
               <input
                 required
-                type="number"
-                min="0"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                type="text"
+                value={formData.amount === 0 ? "" : formData.amount.toLocaleString("id-ID")}
+                onChange={(e) => {
+                  // Hapus semua karakter yang bukan angka (termasuk titik pemisah)
+                  const rawValue = e.target.value.replace(/[^0-9]/g, "");
+                  setFormData({ ...formData, amount: Number(rawValue) });
+                }}
                 className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Misal: 5000000"
+                placeholder="Misal: 5.000.000"
               />
             </div>
             <div>

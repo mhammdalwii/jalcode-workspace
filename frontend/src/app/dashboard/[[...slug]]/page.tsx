@@ -149,8 +149,11 @@ export default function DashboardPage() {
   };
 
   // --- FUNGSI HAPUS ---
-  const deleteData = async (url: string, successMsg: string, updateLocalState: () => void) => {
-    if (!confirm(`Yakin ingin menghapus data ini?`)) return;
+  const deleteData = async (url: string, successMsg: string, updateLocalState: () => void, skipConfirm: boolean = false) => {
+    if (!skipConfirm) {
+      if (!confirm(`Yakin ingin menghapus data ini?`)) return;
+    }
+
     try {
       const res = await fetchWithAuth(url, { method: "DELETE" });
       if (!res.ok) {
@@ -158,7 +161,6 @@ export default function DashboardPage() {
         throw new Error(data.error || "Gagal menghapus data");
       }
       toast.success(successMsg);
-
       updateLocalState();
     } catch (err: any) {
       toast.error(err.message);
@@ -230,7 +232,7 @@ export default function DashboardPage() {
                     setEditingProject(p);
                     setIsProjectModalOpen(true);
                   }}
-                  onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects)}
+                  onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects, true)}
                 />
               ) : (
                 <div className="p-4 overflow-x-auto">
@@ -241,7 +243,7 @@ export default function DashboardPage() {
                       setEditingProject(p);
                       setIsProjectModalOpen(true);
                     }}
-                    onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects)}
+                    onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${id}`, "Proyek dihapus!", mutateProjects, true)}
                     onStatusChange={async () => {
                       mutateProjects();
                     }}
@@ -277,7 +279,7 @@ export default function DashboardPage() {
                 setEditingClient(c);
                 setIsClientModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${id}`, "Klien dihapus!", mutateClients)}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/clients/${id}`, "Klien dihapus!", mutateClients, true)}
               onOpenVault={(c) => {
                 setSelectedClientForVault(c);
                 setIsCredentialPanelOpen(true);
@@ -309,7 +311,7 @@ export default function DashboardPage() {
                 setTeamFormData({ name: t.name, role: t.role, email: t.email, password: "" });
                 setIsTeamModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}`, "Anggota dihapus!", mutateTeams)}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/teams/${id}`, "Anggota dihapus!", mutateTeams, true)}
             />
           </div>
         );
@@ -336,7 +338,7 @@ export default function DashboardPage() {
                 setEditingMentee(m);
                 setIsMenteeModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${id}`, "Peserta dihapus!", mutateMentees)}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/mentees/${id}`, "Peserta dihapus!", mutateMentees, true)}
             />
           </div>
         );
@@ -362,7 +364,7 @@ export default function DashboardPage() {
                 setEditingContent(c);
                 setIsContentModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!", mutateContents)}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!", mutateContents, true)}
               onStatusChange={async () => {
                 mutateContents();
               }}
@@ -392,7 +394,7 @@ export default function DashboardPage() {
                 setEditingInvoice(inv);
                 setIsInvoiceModalOpen(true);
               }}
-              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!", mutateInvoices)}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!", mutateInvoices, true)}
             />
           </div>
         );

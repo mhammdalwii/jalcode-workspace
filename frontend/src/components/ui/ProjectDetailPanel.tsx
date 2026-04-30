@@ -5,6 +5,7 @@ import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, 
 import toast from "react-hot-toast";
 import { fetchWithAuth } from "@/utils/fetchApi";
 import { Project, Task, Attachment } from "@/types";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface ProjectDetailPanelProps {
   isOpen: boolean;
@@ -18,6 +19,14 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
   const [isLoadingTask, setIsLoadingTask] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🚀 STATE UNTUK KONTROL MODAL HAPUS
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    type: "task" | "attachment" | null;
+    id: number | null;
+  }>({ isOpen: false, type: null, id: null });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isOpen || !project) return null;
 
@@ -55,17 +64,6 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
       onRefresh();
     } catch (err) {
       toast.error("Gagal mengubah status tugas");
-    }
-  };
-
-  const handleDeleteTask = async (taskId: number) => {
-    try {
-      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}`, {
-        method: "DELETE",
-      });
-      onRefresh();
-    } catch (err) {
-      toast.error("Gagal menghapus tugas");
     }
   };
 
@@ -108,16 +106,25 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     }
   };
 
-  const handleDeleteAttachment = async (id: number) => {
-    if (!confirm("Hapus lampiran ini?")) return;
+  // 🚀 FUNGSI EKSEKUSI HAPUS (GABUNGAN UNTUK TUGAS & LAMPIRAN)
+  const executeDelete = async () => {
+    if (!deleteModal.id || !deleteModal.type) return;
+
+    setIsDeleting(true);
     try {
-      await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/attachments/${id}`, {
-        method: "DELETE",
-      });
-      toast.success("Lampiran dihapus");
+      if (deleteModal.type === "task") {
+        await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${deleteModal.id}`, { method: "DELETE" });
+        toast.success("Tugas berhasil dihapus");
+      } else if (deleteModal.type === "attachment") {
+        await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/attachments/${deleteModal.id}`, { method: "DELETE" });
+        toast.success("Lampiran berhasil dihapus");
+      }
       onRefresh();
     } catch (err) {
-      toast.error("Gagal menghapus lampiran");
+      toast.error(`Gagal menghapus ${deleteModal.type === "task" ? "tugas" : "lampiran"}`);
+    } finally {
+      setIsDeleting(false);
+      setDeleteModal({ isOpen: false, type: null, id: null }); // Tutup modal
     }
   };
 
@@ -128,8 +135,10 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
   return (
     <>
+      {/* BACKGROUND GELAP PANEL */}
       <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity" onClick={onClose} />
 
+      {/* PANEL UTAMA */}
       <div className="fixed inset-y-0 right-0 w-full md:w-112.5 bg-white shadow-2xl z-50 flex flex-col transform transition-transform duration-300 translate-x-0">
         {/* HEADER PANEL */}
         <div className="p-6 border-b border-gray-100 flex justify-between items-start bg-gray-50/50">
@@ -181,7 +190,8 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
                     {task.is_done ? <CheckCircle2 size={18} className="text-green-500 shrink-0" /> : <Circle size={18} className="text-gray-300 shrink-0" />}
                     <span className={`text-sm ${task.is_done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</span>
                   </div>
-                  <button onClick={() => handleDeleteTask(task.id)} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity">
+                  {/* 🚀 TOMBOL HAPUS TUGAS MEMANGGIL MODAL */}
+                  <button onClick={() => setDeleteModal({ isOpen: true, type: "task", id: task.id })} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -232,7 +242,8 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
                       <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={isImage ? "Lihat Penuh" : "Baca Dokumen"}>
                         <Eye size={16} />
                       </a>
-                      <button onClick={() => handleDeleteAttachment(file.id)} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Hapus">
+                      {/* 🚀 TOMBOL HAPUS LAMPIRAN MEMANGGIL MODAL */}
+                      <button onClick={() => setDeleteModal({ isOpen: true, type: "attachment", id: file.id })} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Hapus">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -250,6 +261,16 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
           </div>
         </div>
       </div>
+
+      {/* 🚀 MODAL KONFIRMASI (GLOBAL UNTUK TUGAS & LAMPIRAN) */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title={deleteModal.type === "task" ? "Hapus Tugas?" : "Hapus Lampiran?"}
+        message={deleteModal.type === "task" ? "Apakah kamu yakin ingin menghapus tugas ini? Aksi ini tidak dapat dibatalkan." : "Apakah kamu yakin ingin menghapus file ini secara permanen dari server?"}
+        isLoading={isDeleting}
+        onClose={() => setDeleteModal({ isOpen: false, type: null, id: null })}
+        onConfirm={executeDelete}
+      />
     </>
   );
 }
