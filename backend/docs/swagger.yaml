@@ -53,6 +53,10 @@ definitions:
     properties:
       notes:
         type: string
+      pic_ids:
+        items:
+          type: integer
+        type: array
       platform:
         type: string
       publish_date:
@@ -60,14 +64,12 @@ definitions:
         type: string
       status:
         type: string
-      team_member_id:
-        type: integer
       title:
         type: string
     required:
+    - pic_ids
     - platform
     - status
-    - team_member_id
     - title
     type: object
   dto.InvoiceRequest:
@@ -590,6 +592,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Update data konten
+      tags:
+      - Contents
+  /api/contents/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Memperbarui hanya status konten (Drag and drop / Dropdown)
+      parameters:
+      - description: ID Konten
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Status baru
+        in: body
+        name: body
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update status konten (Kanban)
       tags:
       - Contents
   /api/credentials/{id}:

@@ -70,6 +70,7 @@ export default function DashboardPage() {
 
   const isLoading = !teamsRes && !projectsRes && !clientsRes && !menteesRes && !contentsRes && !invoicesRes && !agencyRes;
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isFounder, setIsFounder] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
 
   // --- STATE UI & RESPONSIVE ---
@@ -135,6 +136,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsAdmin(isAdminOrFounder());
+    setIsFounder(Cookies.get("role") === "Founder");
   }, [router]);
 
   // --- FUNGSI FETCH ---
@@ -178,7 +180,7 @@ export default function DashboardPage() {
 
   const filteredMentees = mentees.filter((m) => (m.name.toLowerCase().includes(query) || (m.mentor?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || m.status === filterStatus));
 
-  const filteredContents = contents.filter((c) => (c.title.toLowerCase().includes(query) || (c.pic?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || c.status === filterStatus));
+  const filteredContents = contents.filter((c) => (c.title.toLowerCase().includes(query) || (c.pics && c.pics.some((p) => p.name.toLowerCase().includes(query)))) && (filterStatus === "All" || c.status === filterStatus));
 
   const filteredInvoices = invoices.filter((i) => i.invoice_number.toLowerCase().includes(query) || (i.client_name || i.project_title).toLowerCase().includes(query));
 
@@ -351,7 +353,7 @@ export default function DashboardPage() {
               count={filteredContents.length}
               badgeColor="pink"
               buttonText="Tambah Ide"
-              isAdmin={isAdmin}
+              isAdmin={true}
               onAdd={() => {
                 setEditingContent(null);
                 setIsContentModalOpen(true);
@@ -360,13 +362,26 @@ export default function DashboardPage() {
             <ContentKanban
               contents={filteredContents}
               isAdmin={isAdmin}
+              isFounder={isFounder}
               onEdit={(c) => {
                 setEditingContent(c);
                 setIsContentModalOpen(true);
               }}
               onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!", mutateContents, true)}
-              onStatusChange={async () => {
-                mutateContents();
+              onStatusChange={async (id, newStatus) => {
+                try {
+                  const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}/status`, {
+                    method: "PATCH", // Atau "PUT" tergantung API Golang Kapten
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: newStatus }),
+                  });
+                  if (!res.ok) throw new Error("Gagal mengubah status");
+
+                  toast.success(`Status dipindah ke ${newStatus}`);
+                  mutateContents();
+                } catch (err) {
+                  toast.error("Terjadi kesalahan saat memindah kartu");
+                }
               }}
             />
           </div>

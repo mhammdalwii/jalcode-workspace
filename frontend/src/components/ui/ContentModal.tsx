@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { ContentPlan, TeamMember } from "@/types";
@@ -19,7 +19,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
     platform: "Instagram",
     status: "Ide",
     publish_date: "",
-    team_member_id: 0,
+    pic_ids: [] as number[],
     notes: "",
   });
 
@@ -31,24 +31,34 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
           platform: editData.platform,
           status: editData.status,
           publish_date: editData.publish_date ? editData.publish_date.split("T")[0] : "",
-          team_member_id: editData.pic?.id || 0,
+          // 🚀 EKSTRAK ID DARI ARRAY PICS LAMA
+          pic_ids: editData.pics ? editData.pics.map((p) => p.id) : [],
           notes: editData.notes || "",
         });
       } else {
-        setFormData({ title: "", platform: "Instagram", status: "Ide", publish_date: "", team_member_id: teams[0]?.id || 0, notes: "" });
+        setFormData({ title: "", platform: "Instagram", status: "Ide", publish_date: "", pic_ids: [], notes: "" });
       }
     }
-  }, [isOpen, editData, teams]);
+  }, [isOpen, editData]);
 
   if (!isOpen) return null;
 
+  // 🚀 FUNGSI HANDLE CHECKBOX
+  const togglePic = (id: number) => {
+    setFormData((prev) => {
+      if (prev.pic_ids.includes(id)) {
+        return { ...prev, pic_ids: prev.pic_ids.filter((picId) => picId !== id) };
+      } else {
+        return { ...prev, pic_ids: [...prev.pic_ids, id] };
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.pic_ids.length === 0) return toast.error("Pilih minimal 1 orang PIC!");
+
     setIsSubmitting(true);
-
-    // Pastikan team_member_id dikonversi ke angka
-    const payload = { ...formData, team_member_id: Number(formData.team_member_id) };
-
     try {
       const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/contents/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/contents/`;
       const method = editData ? "PUT" : "POST";
@@ -56,7 +66,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData), // 🚀 OTOMATIS MENGIRIM { pic_ids: [1, 3] }
       });
 
       if (!res.ok) {
@@ -67,6 +77,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
       toast.success(`Konten berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -76,15 +87,15 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <h2 className="text-lg font-bold text-gray-800">{editData ? "Edit Rencana Konten" : "Tambah Ide Konten Baru"}</h2>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1">Judul / Topik Konten</label>
             <input
@@ -119,26 +130,32 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">PIC (Penanggung Jawab)</label>
-              <select
-                required
-                value={formData.team_member_id}
-                onChange={(e) => setFormData({ ...formData, team_member_id: Number(e.target.value) })}
-                className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
+          {/* 🚀 CHECKBOX MULTI-PIC (SCROLLABLE) */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Pilih Tim (Bisa lebih dari 1)</label>
+            <div className="border rounded-xl max-h-32 overflow-y-auto p-2 bg-gray-50/50 space-y-1">
+              {teams.map((t) => {
+                const isSelected = formData.pic_ids.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => togglePic(t.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors border ${isSelected ? "bg-blue-50 border-blue-200 text-blue-700 font-medium" : "bg-white border-transparent text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    <span>
+                      {t.name} <span className="text-[10px] text-gray-400 ml-1">({t.role})</span>
+                    </span>
+                    {isSelected && <Check size={16} className="text-blue-600" />}
+                  </button>
+                );
+              })}
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Tgl Tayang (Opsional)</label>
-              <input type="date" value={formData.publish_date} onChange={(e) => setFormData({ ...formData, publish_date: e.target.value })} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Tgl Tayang (Opsional)</label>
+            <input type="date" value={formData.publish_date} onChange={(e) => setFormData({ ...formData, publish_date: e.target.value })} className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
           </div>
 
           <div>
@@ -146,7 +163,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
+              rows={2}
               className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none"
               placeholder="Referensi link, hashtag, dll..."
             ></textarea>
