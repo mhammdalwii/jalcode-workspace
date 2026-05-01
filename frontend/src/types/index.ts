@@ -85,7 +85,7 @@ export interface ContentPlan {
   platform: string;
   status: string; // "Ide", "Drafting", "Review", "Terjadwal", "Publish"
   publish_date: string | null;
-  pic: TeamMember;
+  pics: TeamMember[];
   notes: string;
   created_at: string;
 }

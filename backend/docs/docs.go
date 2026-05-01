@@ -636,6 +636,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/contents/{id}/status": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Memperbarui hanya status konten (Drag and drop / Dropdown)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Contents"
+                ],
+                "summary": "Update status konten (Kanban)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID Konten",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Status baru",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/api/credentials/{id}": {
             "delete": {
                 "security": [
@@ -1512,14 +1562,20 @@ const docTemplate = `{
         "dto.ContentRequest": {
             "type": "object",
             "required": [
+                "pic_ids",
                 "platform",
                 "status",
-                "team_member_id",
                 "title"
             ],
             "properties": {
                 "notes": {
                     "type": "string"
+                },
+                "pic_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
                 },
                 "platform": {
                     "type": "string"
@@ -1530,9 +1586,6 @@ const docTemplate = `{
                 },
                 "status": {
                     "type": "string"
-                },
-                "team_member_id": {
-                    "type": "integer"
                 },
                 "title": {
                     "type": "string"

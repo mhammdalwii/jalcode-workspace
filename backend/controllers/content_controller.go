@@ -20,30 +20,39 @@ import (
 // @Router /api/contents/ [get]
 func GetContents(c *gin.Context) {
 	var contents []models.ContentPlan
-	if err := config.DB.Preload("PIC").Order("created_at desc").Find(&contents).Error; err != nil {
+	
+	// Preload PICs dengan aman
+	if err := config.DB.Preload("PICs").Order("created_at desc").Find(&contents).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data konten"})
 		return
 	}
 
 	// Mapping ke DTO Response agar bersih
 	var contentResponses []dto.ContentResponse
-	for _, c := range contents {
-		pic := dto.TeamMemberResponse{
-			ID:    c.PIC.ID,
-			Name:  c.PIC.Name,
-			Role:  c.PIC.Role,
-			Email: c.PIC.Email,
+	for _, contentItem := range contents {
+		picsResponse := []dto.TeamMemberResponse{}
+
+		// 🚀 PERBAIKAN: Hanya loop jika PICs benar-benar ada isinya
+		if len(contentItem.PICs) > 0 {
+			for _, pic := range contentItem.PICs {
+				picsResponse = append(picsResponse, dto.TeamMemberResponse{
+					ID:    pic.ID,
+					Name:  pic.Name,
+					Role:  pic.Role,
+					Email: pic.Email,
+				})
+			}
 		}
 
 		contentResponses = append(contentResponses, dto.ContentResponse{
-			ID:          c.ID,
-			Title:       c.Title,
-			Platform:    c.Platform,
-			Status:      c.Status,
-			PublishDate: c.PublishDate,
-			PIC:         pic,
-			Notes:       c.Notes,
-			CreatedAt:   c.CreatedAt,
+			ID:          contentItem.ID,
+			Title:       contentItem.Title,
+			Platform:    contentItem.Platform,
+			Status:      contentItem.Status,
+			PublishDate: contentItem.PublishDate,
+			PICs:        picsResponse, 
+			Notes:       contentItem.Notes,
+			CreatedAt:   contentItem.CreatedAt,
 		})
 	}
 
@@ -60,7 +69,7 @@ func GetContents(c *gin.Context) {
 // @Security BearerAuth
 // @Router /api/contents/ [post]
 func CreateContent(c *gin.Context) {
-	var req dto.ContentRequest
+	var req dto.ContentRequest 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -74,13 +83,19 @@ func CreateContent(c *gin.Context) {
 		}
 	}
 
+	// 🚀 CARI SEMUA TEAM MEMBER BERDASARKAN ARRAY ID YANG DIKIRIM FRONTEND
+	var pics []models.TeamMember
+	if len(req.PicIDs) > 0 {
+		config.DB.Where("id IN ?", req.PicIDs).Find(&pics)
+	}
+
 	content := models.ContentPlan{
-		Title:        req.Title,
-		Platform:     req.Platform,
-		Status:       req.Status,
-		PublishDate:  pubDate,
-		TeamMemberID: req.TeamMemberID,
-		Notes:        req.Notes,
+		Title:       req.Title,
+		Platform:    req.Platform,
+		Status:      req.Status,
+		PublishDate: pubDate,
+		PICs:        pics, // 🚀 MASUKKAN ARRAY TEAM MEMBER KE STRUCT
+		Notes:       req.Notes,
 	}
 
 	config.DB.Create(&content)
@@ -96,7 +111,7 @@ func CreateContent(c *gin.Context) {
 		utils.LogActivity(userID, "Menambahkan rencana konten baru", req.Title)
 	}
 
-	config.DB.Preload("PIC").First(&content, content.ID)
+	config.DB.Preload("PICs").First(&content, content.ID)
 	c.JSON(http.StatusCreated, gin.H{"message": "Konten berhasil ditambahkan", "data": content})
 }
 
@@ -127,6 +142,26 @@ func UpdateContent(c *gin.Context) {
 		return
 	}
 
+	//  (CEK ROLE UNTUK MODAL EDIT)
+	var userID uint
+	if userIDObj, exists := c.Get("id"); exists {
+		switch v := userIDObj.(type) {
+		case float64:
+			userID = uint(v)
+		case uint:
+			userID = v
+		}
+
+		var currentUser models.TeamMember
+		config.DB.First(&currentUser, userID)
+
+		// 🚨 LOGIKA BLOKIR: Jika status berubah dari "Ide" lewat form edit, pastikan dia Founder
+		if oldStatus == "Ide" && req.Status != "Ide" && currentUser.Role != "Founder" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak mengubah status Ide!"})
+			return
+		}
+	}
+
 	var pubDate *time.Time
 	if req.PublishDate != "" {
 		parsed, err := time.Parse("2006-01-02", req.PublishDate)
@@ -135,24 +170,25 @@ func UpdateContent(c *gin.Context) {
 		}
 	}
 
+	// CARI TEAM MEMBER YANG BARU DIPILIH
+	var pics []models.TeamMember
+	if len(req.PicIDs) > 0 {
+		config.DB.Where("id IN ?", req.PicIDs).Find(&pics)
+	}
+
 	content.Title = req.Title
 	content.Platform = req.Platform
 	content.Status = req.Status
 	content.PublishDate = pubDate
-	content.TeamMemberID = req.TeamMemberID
 	content.Notes = req.Notes
 
+	// UPDATE DATA DASAR
 	config.DB.Save(&content)
 
-	if userIDObj, exists := c.Get("id"); exists {
-		var userID uint
-		switch v := userIDObj.(type) {
-		case float64:
-			userID = uint(v)
-		case uint:
-			userID = v
-		}
+	// REPLACE ASOSIASI MANY2MANY PICS
+	config.DB.Model(&content).Association("PICs").Replace(pics)
 
+	if userID > 0 {
 		if oldStatus != content.Status {
 			utils.LogActivity(userID, "Menggeser status konten", content.Title+" menjadi "+content.Status)
 		} else {
@@ -160,8 +196,68 @@ func UpdateContent(c *gin.Context) {
 		}
 	}
 
-	config.DB.Preload("PIC").First(&content, id)
+	config.DB.Preload("PICs").First(&content, id)
 	c.JSON(http.StatusOK, gin.H{"message": "Konten berhasil diperbarui", "data": content})
+}
+
+// @Summary Update status konten (Kanban)
+// @Description Memperbarui hanya status konten (Drag and drop / Dropdown)
+// @Tags Contents
+// @Accept json
+// @Produce json
+// @Param id path string true "ID Konten"
+// @Param body body map[string]string true "Status baru"
+// @Success 200 {object} map[string]interface{}
+// @Security BearerAuth
+// @Router /api/contents/{id}/status [patch]
+func UpdateContentStatus(c *gin.Context) {
+	id := c.Param("id")
+	var content models.ContentPlan
+
+	if err := config.DB.First(&content, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Konten tidak ditemukan"})
+		return
+	}
+
+	var req struct {
+		Status string `json:"status" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Status diperlukan"})
+		return
+	}
+
+	oldStatus := content.Status
+
+	// (CEK ROLE)
+	var userID uint
+	if userIDObj, exists := c.Get("id"); exists {
+		switch v := userIDObj.(type) {
+		case float64:
+			userID = uint(v)
+		case uint:
+			userID = v
+		}
+
+		// Tarik data user asli dari database untuk memastikan jabatannya
+		var currentUser models.TeamMember
+		config.DB.First(&currentUser, userID)
+
+		if oldStatus == "Ide" && req.Status != "Ide" && currentUser.Role != "Founder" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak menyetujui Ide Konten!"})
+			return
+		}
+	}
+
+	content.Status = req.Status
+	config.DB.Save(&content)
+
+	if userID > 0 && oldStatus != content.Status {
+		utils.LogActivity(userID, "Memindah kartu konten", content.Title+" ke "+content.Status)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Status konten berhasil dipindah", "data": content})
 }
 
 // @Summary Hapus rencana konten
@@ -192,6 +288,9 @@ func DeleteContent(c *gin.Context) {
 		utils.LogActivity(userID, "Menghapus rencana konten", content.Title)
 	}
 
+	// 🚀 HAPUS ASOSIASI PICS SEBELUM MENGHAPUS KONTEN
+	config.DB.Model(&content).Association("PICs").Clear()
 	config.DB.Delete(&content)
+	
 	c.JSON(http.StatusOK, gin.H{"message": "Konten berhasil dihapus"})
 }

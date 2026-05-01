@@ -17,5 +17,6 @@ func ContentRoutes(r *gin.Engine) {
 		contentGroup.POST("/", controllers.CreateContent)
 		contentGroup.PUT("/:id", controllers.UpdateContent)
 		contentGroup.DELETE("/:id", controllers.DeleteContent)
+		contentGroup.PATCH("/:id/status", controllers.UpdateContentStatus)
 	}
 }
