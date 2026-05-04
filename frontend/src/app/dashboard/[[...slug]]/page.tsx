@@ -368,12 +368,15 @@ export default function DashboardPage() {
                 setIsContentModalOpen(true);
               }}
               onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}`, "Konten dihapus!", mutateContents, true)}
-              onStatusChange={async (id, newStatus) => {
+              onStatusChange={async (id, newStatus, reason) => {
                 try {
+                  const payload: any = { status: newStatus };
+                  if (reason) payload.reason = reason;
+
                   const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/contents/${id}/status`, {
-                    method: "PATCH", // Atau "PUT" tergantung API Golang Kapten
+                    method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ status: newStatus }),
+                    body: JSON.stringify(payload),
                   });
                   if (!res.ok) throw new Error("Gagal mengubah status");
 
