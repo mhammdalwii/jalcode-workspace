@@ -32,7 +32,7 @@ func GetContents(c *gin.Context) {
 	for _, contentItem := range contents {
 		picsResponse := []dto.TeamMemberResponse{}
 
-		// 🚀 PERBAIKAN: Hanya loop jika PICs benar-benar ada isinya
+		// PERBAIKAN: Hanya loop jika PICs benar-benar ada isinya
 		if len(contentItem.PICs) > 0 {
 			for _, pic := range contentItem.PICs {
 				picsResponse = append(picsResponse, dto.TeamMemberResponse{
@@ -83,7 +83,7 @@ func CreateContent(c *gin.Context) {
 		}
 	}
 
-	// 🚀 CARI SEMUA TEAM MEMBER BERDASARKAN ARRAY ID YANG DIKIRIM FRONTEND
+	// CARI SEMUA TEAM MEMBER BERDASARKAN ARRAY ID YANG DIKIRIM FRONTEND
 	var pics []models.TeamMember
 	if len(req.PicIDs) > 0 {
 		config.DB.Where("id IN ?", req.PicIDs).Find(&pics)
@@ -94,7 +94,7 @@ func CreateContent(c *gin.Context) {
 		Platform:    req.Platform,
 		Status:      req.Status,
 		PublishDate: pubDate,
-		PICs:        pics, // 🚀 MASUKKAN ARRAY TEAM MEMBER KE STRUCT
+		PICs:        pics, // MASUKKAN ARRAY TEAM MEMBER KE STRUCT
 		Notes:       req.Notes,
 	}
 
@@ -142,7 +142,7 @@ func UpdateContent(c *gin.Context) {
 		return
 	}
 
-	//  (CEK ROLE UNTUK MODAL EDIT)
+	// 🔒 BENTENG KEAMANAN INDUSTRI (CEK ROLE UNTUK MODAL EDIT)
 	var userID uint
 	if userIDObj, exists := c.Get("id"); exists {
 		switch v := userIDObj.(type) {
@@ -155,10 +155,25 @@ func UpdateContent(c *gin.Context) {
 		var currentUser models.TeamMember
 		config.DB.First(&currentUser, userID)
 
-		// 🚨 LOGIKA BLOKIR: Jika status berubah dari "Ide" lewat form edit, pastikan dia Founder
-		if oldStatus == "Ide" && req.Status != "Ide" && currentUser.Role != "Founder" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak mengubah status Ide!"})
-			return
+		// 🚨 JIKA STATUSNYA MAU DIUBAH
+		if oldStatus != req.Status {
+			// 1. BLOKIR TOTAL UNTUK ANGGOTA BIASA
+			if currentUser.Role != "Founder" && currentUser.Role != "Admin" {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Admin dan Founder yang berhak mengubah status konten!"})
+				return
+			}
+			
+			// 2. BLOKIR KHUSUS APPROVAL IDE UNTUK ADMIN (Hanya Founder yang boleh)
+			if oldStatus == "Ide" && currentUser.Role != "Founder" {
+				c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak mengubah status Ide!"})
+				return
+			}
+
+			// 3. BLOKIR MUNDUR: Tidak bisa kembali ke "Ide" jika sudah disetujui
+			if oldStatus != "Ide" && req.Status == "Ide" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Operasi Ditolak: Kartu yang sudah diproses tidak bisa dikembalikan menjadi Ide!"})
+				return
+			}
 		}
 	}
 
@@ -221,6 +236,7 @@ func UpdateContentStatus(c *gin.Context) {
 
 	var req struct {
 		Status string `json:"status" binding:"required"`
+		Reason string `json:"reason"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -230,7 +246,7 @@ func UpdateContentStatus(c *gin.Context) {
 
 	oldStatus := content.Status
 
-	// (CEK ROLE)
+	// 🔒 BENTENG KEAMANAN INDUSTRI (CEK ROLE)
 	var userID uint
 	if userIDObj, exists := c.Get("id"); exists {
 		switch v := userIDObj.(type) {
@@ -244,10 +260,27 @@ func UpdateContentStatus(c *gin.Context) {
 		var currentUser models.TeamMember
 		config.DB.First(&currentUser, userID)
 
-		if oldStatus == "Ide" && req.Status != "Ide" && currentUser.Role != "Founder" {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak menyetujui Ide Konten!"})
+		// 🚨 1. BLOKIR TOTAL: Jika bukan Founder DAN bukan Admin, larang pindah kartu sama sekali!
+		if currentUser.Role != "Founder" && currentUser.Role != "Admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Admin dan Founder yang berhak memindah kartu!"})
 			return
 		}
+
+		// 🚨 2. BLOKIR KHUSUS: Hanya Founder yang bisa memindah dari status "Ide"
+		if oldStatus == "Ide" && req.Status != "Ide" && currentUser.Role != "Founder" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Akses Ditolak: Hanya Founder yang berhak menyetujui atau menolak Ide Konten!"})
+			return
+		}
+
+		// 🚀 3. BLOKIR MUNDUR: Tidak bisa kembali ke "Ide" jika sudah disetujui
+		if oldStatus != "Ide" && req.Status == "Ide" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Operasi Ditolak: Kartu yang sudah diproses tidak bisa dikembalikan menjadi Ide!"})
+			return
+		}
+	}
+
+	if req.Status == "Ditolak" && req.Reason != "" {
+		content.Notes = "❌ ALASAN DITOLAK: " + req.Reason + "\n\n" + content.Notes
 	}
 
 	content.Status = req.Status
@@ -288,7 +321,7 @@ func DeleteContent(c *gin.Context) {
 		utils.LogActivity(userID, "Menghapus rencana konten", content.Title)
 	}
 
-	// 🚀 HAPUS ASOSIASI PICS SEBELUM MENGHAPUS KONTEN
+	// HAPUS ASOSIASI PICS SEBELUM MENGHAPUS KONTEN
 	config.DB.Model(&content).Association("PICs").Clear()
 	config.DB.Delete(&content)
 	

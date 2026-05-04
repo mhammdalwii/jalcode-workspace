@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Edit, Trash2, Calendar, MessageSquare, Globe, AtSign, CheckCircle2, Clock } from "lucide-react";
+import { Edit, Trash2, Calendar, MessageSquare, Globe, AtSign, CheckCircle2, Clock, AlignLeft, XCircle, AlertTriangle } from "lucide-react";
 import { ContentPlan } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
@@ -7,7 +7,7 @@ interface ContentKanbanProps {
   contents: ContentPlan[];
   onEdit: (content: ContentPlan) => void;
   onDelete: (id: number) => void;
-  onStatusChange: (id: number, newStatus: string) => void;
+  onStatusChange: (id: number, newStatus: string, reason?: string) => void;
   isAdmin: boolean;
   isFounder: boolean;
 }
@@ -18,10 +18,15 @@ const COLUMNS = [
   { id: "Review", title: "👀 Review", color: "bg-blue-50 border-blue-200 text-blue-700" },
   { id: "Terjadwal", title: "⏳ Terjadwal", color: "bg-purple-50 border-purple-200 text-purple-700" },
   { id: "Publish", title: "✅ Published", color: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+  { id: "Ditolak", title: "❌ Ditolak", color: "bg-red-50 border-red-200 text-red-700" },
 ];
 
 export default function ContentKanban({ contents, onEdit, onDelete, onStatusChange, isAdmin, isFounder }: ContentKanbanProps) {
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
+
+  // 🚀 STATE UNTUK MODAL PENOLAKAN
+  const [rejectModalId, setRejectModalId] = useState<number | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const getPlatformStyle = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -54,9 +59,10 @@ export default function ContentKanban({ contents, onEdit, onDelete, onStatusChan
                   columnContents.map((content) => {
                     const platformStyle = getPlatformStyle(content.platform);
                     const isWaitingApproval = content.status === "Ide" && !isFounder;
+                    const isRejected = content.status === "Ditolak"; // 🚀 CEK APAKAH KARTU INI DITOLAK
 
                     return (
-                      <div key={content.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition group">
+                      <div key={content.id} className={`bg-white p-4 rounded-xl shadow-sm border hover:shadow-md transition group ${isRejected ? "border-red-200" : "border-slate-200"}`}>
                         <div className="flex justify-between items-start mb-2">
                           <span className={`flex items-center gap-1.5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${platformStyle.bg} ${platformStyle.text}`}>
                             {platformStyle.icon} {content.platform}
@@ -74,7 +80,20 @@ export default function ContentKanban({ contents, onEdit, onDelete, onStatusChan
                           )}
                         </div>
 
-                        <h4 className="font-bold text-slate-800 text-sm leading-snug mb-3">{content.title}</h4>
+                        <h4 className="font-bold text-slate-800 text-sm leading-snug mb-2">{content.title}</h4>
+
+                        {/* 🚀 BLOK CATATAN KHUSUS (MERAH JIKA DITOLAK, BIASA JIKA TIDAK) */}
+                        {content.notes && (
+                          <div className={`mb-3 p-2.5 rounded-lg border text-xs ${isRejected ? "bg-red-50 border-red-100 text-red-700" : "bg-slate-50/80 border-slate-100 text-slate-600"}`}>
+                            <div className={`flex items-center gap-1.5 mb-1 text-[10px] font-bold uppercase tracking-wide ${isRejected ? "text-red-500" : "text-slate-400"}`}>
+                              {isRejected ? <AlertTriangle size={12} /> : <AlignLeft size={10} />}
+                              {isRejected ? "Catatan Penolakan" : "Catatan"}
+                            </div>
+                            <p className="line-clamp-4 leading-relaxed whitespace-pre-line" title={content.notes}>
+                              {content.notes}
+                            </p>
+                          </div>
+                        )}
 
                         <div className="flex justify-between items-end border-t border-slate-100 pt-3">
                           <div className="flex flex-col">
@@ -100,20 +119,38 @@ export default function ContentKanban({ contents, onEdit, onDelete, onStatusChan
                               <select
                                 value={content.status}
                                 onChange={(e) => onStatusChange(content.id, e.target.value)}
-                                className="w-full text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded py-1 px-2 outline-none cursor-pointer hover:border-blue-300"
+                                className={`text-xs bg-transparent border-none focus:ring-0 ${!isAdmin ? "cursor-not-allowed opacity-70" : "cursor-pointer"}`}
+                                disabled={!isAdmin}
                               >
                                 {COLUMNS.map((c) => (
-                                  <option key={c.id} value={c.id}>
+                                  <option key={c.id} value={c.id} disabled={c.id === "Ide" && content.status !== "Ide"}>
                                     Pindah ke: {c.title.replace(/[^a-zA-Z ]/g, "")}
                                   </option>
                                 ))}
                               </select>
 
-                              {/* Tombol Cepat Approve khusus Admin di kolom Ide */}
+                              {/* TOMBOL TOLAK DAN APPROVE KHUSUS FOUNDER */}
                               {isFounder && content.status === "Ide" && (
-                                <button onClick={() => onStatusChange(content.id, "Drafting")} className="px-2 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 flex items-center justify-center" title="Approve Ide Ini">
-                                  <CheckCircle2 size={16} />
-                                </button>
+                                <div className="flex gap-1 ml-auto">
+                                  <button
+                                    onClick={() => {
+                                      // 🚀 BUKA MODAL KUSTOM ALIH-ALIH WINDOW.PROMPT
+                                      setRejectReason("");
+                                      setRejectModalId(content.id);
+                                    }}
+                                    className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center justify-center transition"
+                                    title="Tolak Ide Ini"
+                                  >
+                                    <XCircle size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => onStatusChange(content.id, "Drafting")}
+                                    className="p-1.5 bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200 flex items-center justify-center transition"
+                                    title="Approve Ide Ini"
+                                  >
+                                    <CheckCircle2 size={16} />
+                                  </button>
+                                </div>
                               )}
                             </div>
                           )}
@@ -128,6 +165,46 @@ export default function ContentKanban({ contents, onEdit, onDelete, onStatusChan
         })}
       </div>
 
+      {/* 🚀 MODAL KUSTOM UNTUK ALASAN PENOLAKAN */}
+      {rejectModalId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+              <XCircle className="text-red-500" size={20} />
+              <h3 className="text-lg font-bold text-gray-900">Tolak Ide Konten</h3>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-gray-600 mb-3">Berikan alasan mengapa ide konten ini ditolak agar tim dapat mengerti dan memperbaikinya.</p>
+              <textarea
+                className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none"
+                rows={4}
+                placeholder="Contoh: Kurang relevan dengan target audiens, silakan cari referensi lain..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            </div>
+            <div className="p-4 bg-gray-50 flex justify-end gap-3 border-t border-gray-100">
+              <button onClick={() => setRejectModalId(null)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (rejectReason.trim() !== "") {
+                    onStatusChange(rejectModalId, "Ditolak", rejectReason);
+                    setRejectModalId(null);
+                  }
+                }}
+                disabled={rejectReason.trim() === ""}
+                className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition ${rejectReason.trim() === "" ? "bg-red-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700 shadow-sm"}`}
+              >
+                Tolak Ide Ini
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HAPUS KONTEN (SUDAH ADA SEBELUMNYA) */}
       <ConfirmModal
         isOpen={deleteModalId !== null}
         title="Hapus Rencana Konten?"
