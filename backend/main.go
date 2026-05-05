@@ -2,10 +2,12 @@ package main
 
 import (
 	"jalcode-api/config"
+	"jalcode-api/docs"
 	"jalcode-api/models"
 	"jalcode-api/routes"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -20,13 +22,23 @@ import (
 // @title Jalcode API Documentation
 // @version 1.0
 // @description REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.
-// @host api.jalcode.id
 // @BasePath /
-// @schemes https http
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
 func main() {
+	env := os.Getenv("APP_ENV") 
+
+	if env == "production" {
+		docs.SwaggerInfo.Host = "api.jalcode.id"
+		docs.SwaggerInfo.Schemes = []string{"https"}
+		log.Println("🌍 Swagger Mode: PRODUCTION (api.jalcode.id)")
+	} else {
+		docs.SwaggerInfo.Host = "localhost:8080"
+		docs.SwaggerInfo.Schemes = []string{"http"}
+		log.Println("💻 Swagger Mode: LOCAL (localhost:8080)")
+	}
+
 	config.ConnectDatabase()
 	log.Println("Memulai migrasi database...")
 	errMigrate := config.DB.AutoMigrate(
@@ -96,6 +108,7 @@ func main() {
 	routes.ContentRoutes(r)
 	routes.InvoiceRoutes(r)
 	routes.AgencyRoutes(r)
+	routes.DashboardRoutes(r)
 	
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -190,7 +190,6 @@ definitions:
     - name
     - role
     type: object
-host: api.jalcode.id
 info:
   contact: {}
   description: REST API terpusat untuk sistem manajemen Tim dan Proyek Klien Jalcode.
@@ -1134,9 +1133,6 @@ paths:
       summary: Reset Password Tim
       tags:
       - Teams
-schemes:
-- https
-- http
 securityDefinitions:
   BearerAuth:
     in: header
