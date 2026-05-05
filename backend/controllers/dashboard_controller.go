@@ -26,8 +26,9 @@ func GetDashboardInit(c *gin.Context) {
 	config.DB.Limit(1).Find(&agency)
 
 	// 2. Tarik Data Relasi
-	config.DB.Preload("TeamMembers").Preload("Client").Find(&projects)
+	config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects)
 	config.DB.Preload("PICs").Order("created_at desc").Find(&contents)
+	
 
 
 	// A. Bersihkan Tim (Buang Password)
@@ -66,6 +67,8 @@ func GetDashboardInit(c *gin.Context) {
 			"client_id":    p.ClientID,
 			"client":       clientData, 
 			"team_members": teamRes,
+			"tasks":        p.Tasks,       	
+			"attachments":  p.Attachments,
 			"created_at":   p.CreatedAt,
 			"updated_at":   p.UpdatedAt,
 		})

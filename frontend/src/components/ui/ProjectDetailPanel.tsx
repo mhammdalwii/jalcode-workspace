@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { fetchWithAuth } from "@/utils/fetchApi";
 import { Project, Task, Attachment } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Cookies from "js-cookie";
 
 interface ProjectDetailPanelProps {
   isOpen: boolean;
@@ -86,8 +87,13 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     formData.append("file", file);
 
     try {
-      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
+      // Ambil token secara manual
+      const token = Cookies.get("token");
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
