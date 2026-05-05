@@ -34,19 +34,24 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
     },
   });
 
-  // Pantau perubahan array PIC secara realtime
   const selectedPICs = watch("team_member_ids") || [];
 
-  // AUTO-FILL SAAT MODE EDIT
   useEffect(() => {
+    register("team_member_ids");
+
     if (editData) {
+      const picIds = editData.team_members?.map((pic) => pic.id) || [];
+
       reset({
         title: editData.title,
         category: editData.category,
         status: editData.status,
-        client_id: editData.client?.id ? String(editData.client.id) : "",
-        team_member_ids: editData.pics?.map((pic) => pic.id) || [],
+        client_id: editData.client_id ? String(editData.client_id) : "",
+        team_member_ids: picIds,
       });
+
+      // 3. Pukul paksa nilainya agar Checkbox langsung terceklis di layar
+      setValue("team_member_ids", picIds);
     } else {
       reset({
         title: "",
@@ -55,19 +60,18 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
         status: "Antrean",
         team_member_ids: [],
       });
+      setValue("team_member_ids", []);
     }
-  }, [editData, isOpen, reset]);
+  }, [editData, isOpen, reset, setValue, register]);
 
   // Fungsi khusus untuk Toggle (Ceklis/Unceklis) PIC
   const handleTogglePIC = (id: number) => {
     if (selectedPICs.includes(id)) {
-      // Jika sudah diceklis, hapus dari array
       setValue(
         "team_member_ids",
         selectedPICs.filter((picId) => picId !== id),
       );
     } else {
-      // Jika belum, tambahkan ke array
       setValue("team_member_ids", [...selectedPICs, id]);
     }
   };
@@ -146,7 +150,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
             </div>
           </div>
 
-          {/* CHECKBOX ANGGOTA TIM (MULTIPLE PIC) */}
+          {/* CHECKBOX ANGGOTA TIM */}
           <div>
             <label className="block text-sm font-medium mb-2">Pilih Anggota Tim (Bisa lebih dari 1) *</label>
             <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50/50">

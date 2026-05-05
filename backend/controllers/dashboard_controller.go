@@ -26,12 +26,9 @@ func GetDashboardInit(c *gin.Context) {
 	config.DB.Limit(1).Find(&agency)
 
 	// 2. Tarik Data Relasi
-	config.DB.Preload("TeamMembers").Find(&projects)
+	config.DB.Preload("TeamMembers").Preload("Client").Find(&projects)
 	config.DB.Preload("PICs").Order("created_at desc").Find(&contents)
 
-	// =========================================================
-	// 🚀 ZONA PEMBERSIHAN INFINITE LOOP (SANGAT PENTING!)
-	// =========================================================
 
 	// A. Bersihkan Tim (Buang Password)
 	var cleanTeams []gin.H
@@ -50,13 +47,25 @@ func GetDashboardInit(c *gin.Context) {
 				"id": tm.ID, "name": tm.Name, "email": tm.Email, "role": tm.Role,
 			})
 		}
+
+		// 🚀 BUNGKUS DATA KLIEN JIKA ADA
+		var clientData gin.H = nil
+		if p.Client != nil {
+			clientData = gin.H{
+				"id": p.Client.ID,
+				"company": p.Client.Company,
+				"name": p.Client.Name,
+			}
+		}
+
 		cleanProjects = append(cleanProjects, gin.H{
 			"id":           p.ID,
 			"title":        p.Title,
 			"category":     p.Category,
 			"status":       p.Status,
 			"client_id":    p.ClientID,
-			"team_members": teamRes, // Hanya masukkan data tim yang sudah bersih
+			"client":       clientData, 
+			"team_members": teamRes,
 			"created_at":   p.CreatedAt,
 			"updated_at":   p.UpdatedAt,
 		})

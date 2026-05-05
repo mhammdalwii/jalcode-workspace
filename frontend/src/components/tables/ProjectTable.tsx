@@ -41,7 +41,7 @@ export default function ProjectTable({ projects, onEdit, onDelete, isAdmin }: Pr
                     {p.status}
                   </span>
                 </td>
-                <td className="p-4 text-gray-600">{p.pics?.map((pic) => pic.name).join(", ") || "-"}</td>
+                <td className="p-4 text-gray-600">{p.team_members?.map((member) => member.name).join(", ") || "-"}</td>
                 {isAdmin && (
                   <td className="p-4 text-right flex justify-end gap-3">
                     <button onClick={() => onEdit(p)} className="text-blue-600 hover:text-blue-800">
