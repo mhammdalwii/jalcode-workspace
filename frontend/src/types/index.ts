@@ -6,8 +6,8 @@ export interface TeamMember {
 }
 
 export interface Project {
-  pics?: TeamMember[];
-  team_member_id: number;
+  team_members?: TeamMember[];
+  team_member_id?: number;
   client_id: number;
   id: number;
   title: string;

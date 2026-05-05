@@ -107,7 +107,7 @@ export default function ProjectKanban({ projects, onEdit, onDelete, onStatusChan
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <User size={12} className="text-gray-400" />
-                        <span className="truncate">{p.pics?.map((pic) => pic.name).join(", ") || "Belum ada PIC"}</span>
+                        <span className="truncate">{p.team_members?.map((member) => member.name).join(", ") || "Belum ada PIC"}</span>
                       </div>
                     </div>
                   </div>
