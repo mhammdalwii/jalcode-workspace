@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown } from "lucide-react";
+import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown, Calculator } from "lucide-react";
 import { Invoice } from "@/types";
 import toast from "react-hot-toast";
 import { jsPDF } from "jspdf";
@@ -12,10 +12,11 @@ interface InvoiceTableProps {
   onEdit: (invoice: Invoice) => void;
   onDelete: (id: number) => void;
   isAdmin: boolean;
+  onCalculateFee?: (invoice: Invoice) => void;
   agencyProfile: any;
 }
 
-export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agencyProfile }: InvoiceTableProps) {
+export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agencyProfile, onCalculateFee }: InvoiceTableProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [printingId, setPrintingId] = useState<number | null>(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
@@ -138,26 +139,30 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
                 <td className="p-4 text-center">
                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusColor(inv.status)}`}>{inv.status}</span>
                 </td>
-                <td className="p-4 text-right">
-                  {isAdmin && (
-                    <div className="flex justify-end gap-2 items-center">
-                      <button
-                        onClick={() => handleDownloadPDF(inv)}
-                        disabled={printingId === inv.id}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-bold text-white transition ${printingId === inv.id ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"}`}
-                      >
-                        <Download size={14} /> {printingId === inv.id ? "Mencetak..." : "PDF"}
-                      </button>
-                      <button onClick={() => onEdit(inv)} className="p-1.5 text-slate-400 hover:text-blue-600 transition">
-                        <Edit size={16} />
-                      </button>
 
-                      <button onClick={() => setDeleteModalId(inv.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition">
-                        <Trash2 size={16} />
+                {isAdmin && (
+                  <td className="p-4 text-right flex justify-end gap-3">
+                    {onCalculateFee && (
+                      <button onClick={() => onCalculateFee(inv)} className="text-emerald-600 hover:text-emerald-800" title="Hitung Profit Sharing">
+                        <Calculator size={18} />
                       </button>
-                    </div>
-                  )}
-                </td>
+                    )}
+
+                    <button onClick={() => onEdit(inv)} className="text-blue-600 hover:text-blue-800" title="Edit">
+                      <Edit size={18} />
+                    </button>
+                    <button onClick={() => setDeleteModalId(inv.id)} className="text-red-600 hover:text-red-800" title="Hapus">
+                      <Trash2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDownloadPDF(inv)}
+                      disabled={printingId === inv.id}
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-bold text-white transition ${printingId === inv.id ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"}`}
+                    >
+                      <Download size={14} /> {printingId === inv.id ? "Mencetak..." : "PDF"}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

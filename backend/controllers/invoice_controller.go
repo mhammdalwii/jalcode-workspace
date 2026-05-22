@@ -33,8 +33,8 @@ func parseDateStr(dateStr string) *time.Time {
 // @Router /api/invoices/ [get]
 func GetInvoices(c *gin.Context) {
 	var invoices []models.Invoice
-	// Kita tarik juga data Project dan Client di dalamnya
-	if err := config.DB.Preload("Project").Preload("Project.Client").Order("created_at desc").Find(&invoices).Error; err != nil {
+	// 🚀 PRELOAD ITEMS DITAMBAHKAN
+	if err := config.DB.Preload("Items").Preload("Project").Preload("Project.Client").Order("created_at desc").Find(&invoices).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data tagihan"})
 		return
 	}
@@ -44,6 +44,18 @@ func GetInvoices(c *gin.Context) {
 		clientName := "-"
 		if inv.Project.ClientID != nil {
 			clientName = inv.Project.Client.Company
+		}
+
+		// 🚀 MAPPING ITEMS KE RESPONSE
+		var itemsRes []dto.InvoiceItemResponse
+		for _, item := range inv.Items {
+			itemsRes = append(itemsRes, dto.InvoiceItemResponse{
+				ID:          item.ID,
+				Description: item.Description,
+				Quantity:    item.Quantity,
+				Price:       item.Price,
+				Total:       item.Total,
+			})
 		}
 
 		response = append(response, dto.InvoiceResponse{
@@ -58,6 +70,7 @@ func GetInvoices(c *gin.Context) {
 			DueDate:       &inv.DueDate,
 			ServiceType:   inv.ServiceType,
 			Notes:         inv.Notes,
+			Items:         itemsRes, 
 			CreatedAt:     inv.CreatedAt,
 		})
 	}
@@ -81,12 +94,9 @@ func CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	// Buat Auto-Generated Invoice Number (Format: INV-YYYYMMDD-ID)
-	// Kita hitung jumlah invoice hari ini untuk nomor urut
 	var count int64
 	today := time.Now().Format("20060102")
 	config.DB.Model(&models.Invoice{}).Where("invoice_number LIKE ?", "INV-"+today+"%").Count(&count)
-	
 	invoiceNumber := fmt.Sprintf("INV-%s-%03d", today, count+1)
 
 	issueDate := parseDateStr(req.IssueDate)
@@ -97,8 +107,19 @@ func CreateInvoice(c *gin.Context) {
 	
 	dueDate := parseDateStr(req.DueDate)
 	if dueDate == nil {
-		defaultDue := time.Now().AddDate(0, 0, 14) // Default 14 hari
+		defaultDue := time.Now().AddDate(0, 0, 14)
 		dueDate = &defaultDue
+	}
+
+	// 🚀 KONVERSI DTO KE MODEL ITEMS
+	var newItems []models.InvoiceItem
+	for _, itemReq := range req.Items {
+		newItems = append(newItems, models.InvoiceItem{
+			Description: itemReq.Description,
+			Quantity:    itemReq.Quantity,
+			Price:       itemReq.Price,
+			Total:       itemReq.Total,
+		})
 	}
 
 	invoice := models.Invoice{
@@ -110,11 +131,11 @@ func CreateInvoice(c *gin.Context) {
 		DueDate:       *dueDate,
 		ServiceType:   req.ServiceType,
 		Notes:         req.Notes,
+		Items:         newItems, 
 	}
 
 	config.DB.Create(&invoice)
 
-	// Catat di Audit Trail
 	if userIDObj, exists := c.Get("id"); exists {
 		var userID uint
 		switch v := userIDObj.(type) {
@@ -161,6 +182,21 @@ func UpdateInvoice(c *gin.Context) {
 	if iDate := parseDateStr(req.IssueDate); iDate != nil { invoice.IssueDate = *iDate }
 	if dDate := parseDateStr(req.DueDate); dDate != nil { invoice.DueDate = *dDate }
 
+	// 🚀 HAPUS ITEMS LAMA & GANTI DENGAN YANG BARU (Agar sinkron jika ada yang dihapus di frontend)
+	config.DB.Where("invoice_id = ?", invoice.ID).Delete(&models.InvoiceItem{})
+
+	var updatedItems []models.InvoiceItem
+	for _, itemReq := range req.Items {
+		updatedItems = append(updatedItems, models.InvoiceItem{
+			InvoiceID:   invoice.ID, // Hubungkan manual
+			Description: itemReq.Description,
+			Quantity:    itemReq.Quantity,
+			Price:       itemReq.Price,
+			Total:       itemReq.Total,
+		})
+	}
+	invoice.Items = updatedItems
+
 	config.DB.Save(&invoice)
 
 	if userIDObj, exists := c.Get("id"); exists {
@@ -194,6 +230,7 @@ func DeleteInvoice(c *gin.Context) {
 		return
 	}
 
+	// GORM otomatis menghapus items karena ada constraint OnDelete:CASCADE
 	config.DB.Delete(&invoice)
 	c.JSON(http.StatusOK, gin.H{"message": "Tagihan berhasil dihapus"})
 }

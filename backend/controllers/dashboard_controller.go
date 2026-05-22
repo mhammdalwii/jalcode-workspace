@@ -27,8 +27,8 @@ func GetDashboardInit(c *gin.Context) {
 
 	// 2. Tarik Data Relasi
 	config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects)
+	config.DB.Preload("Items").Preload("Project").Preload("Project.Client").Find(&invoices)
 	config.DB.Preload("PICs").Order("created_at desc").Find(&contents)
-	
 
 
 	// A. Bersihkan Tim (Buang Password)
@@ -56,6 +56,8 @@ func GetDashboardInit(c *gin.Context) {
 				"id": p.Client.ID,
 				"company": p.Client.Company,
 				"name": p.Client.Name,
+				"address": p.Client.Address,
+				"phone":   p.Client.Phone,
 			}
 		}
 
@@ -90,6 +92,30 @@ func GetDashboardInit(c *gin.Context) {
 		})
 	}
 
+	var cleanInvoices []gin.H
+	for _, inv := range invoices {
+		clientName := "Klien Internal"
+		if inv.Project.ClientID != nil {
+			clientName = inv.Project.Client.Company
+		}
+
+		cleanInvoices = append(cleanInvoices, gin.H{
+			"id":             inv.ID,
+			"invoice_number": inv.InvoiceNumber,
+			"project_id":     inv.ProjectID,
+			"project_title":  inv.Project.Title, 
+			"client_name":    clientName,       
+			"amount":         inv.Amount,
+			"status":         inv.Status,
+			"issue_date":     inv.IssueDate,
+			"due_date":       inv.DueDate,
+			"service_type":   inv.ServiceType,
+			"notes":          inv.Notes,
+			"items":          inv.Items,
+			"created_at":     inv.CreatedAt,
+		})
+	}
+
 	// 3. KIRIM JSON (Tanpa menggunakan struktur DTO mentah)
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{
@@ -98,7 +124,7 @@ func GetDashboardInit(c *gin.Context) {
 			"clients":  clients,
 			"mentees":  mentees,
 			"contents": cleanContents,
-			"invoices": invoices,
+			"invoices": cleanInvoices,
 			"agency":   agency,
 		},
 	})

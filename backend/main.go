@@ -53,6 +53,7 @@ func main() {
 		&models.ContentPlan{}, 
 		&models.Invoice{}, 
 		&models.AgencyProfile{},
+		&models.InvoiceItem{},
 	)
 
 	if errMigrate != nil {

@@ -1,12 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useState, useRef } from "react";
-import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, Loader2, Eye } from "lucide-react";
+import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, Loader2, Eye, Printer, PenTool, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
+import Cookies from "js-cookie";
+import { useReactToPrint } from "react-to-print";
+
 import { fetchWithAuth } from "@/utils/fetchApi";
 import { Project, Task, Attachment } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import Cookies from "js-cookie";
+import SPKDocument from "@/components/pdf/SPKDocument";
+import QuotationModal from "@/components/ui/QuotationModal";
+import SignatureModal from "@/components/ui/SignatureModal";
+import SPKModal from "./SPKModal";
+import BASTModal from "./BASTModal";
 
 interface ProjectDetailPanelProps {
   isOpen: boolean;
@@ -20,8 +27,19 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
   const [isLoadingTask, setIsLoadingTask] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const spkPrintRef = useRef<HTMLDivElement>(null);
+  const [isQuotationModalOpen, setIsQuotationModalOpen] = useState(false);
+  const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
+  const [clientSignature, setClientSignature] = useState<string | null>(null);
+  const [isSPKModalOpen, setIsSPKModalOpen] = useState(false);
+  const [isBASTModalOpen, setIsBASTModalOpen] = useState(false);
 
-  // 🚀 STATE UNTUK KONTROL MODAL HAPUS
+  const handlePrintSPK = useReactToPrint({
+    contentRef: spkPrintRef,
+    documentTitle: `SPK_${project?.title?.replace(/\s+/g, "_")}`,
+  });
+
+  // STATE UNTUK KONTROL MODAL HAPUS
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     type: "task" | "attachment" | null;
@@ -73,7 +91,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 🛡️ VALIDASI LAPIS 1 (Maksimal 5 MB)
+    // VALIDASI LAPIS 1 (Maksimal 5 MB)
     const MAX_FILE_SIZE = 5 * 1024 * 1024;
     if (file.size > MAX_FILE_SIZE) {
       toast.error("Ukuran file terlalu besar! Maksimal 5 MB.");
@@ -87,7 +105,6 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     formData.append("file", file);
 
     try {
-      // Ambil token secara manual
       const token = Cookies.get("token");
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects/${project.id}/attachments`, {
         method: "POST",
@@ -112,7 +129,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
     }
   };
 
-  // 🚀 FUNGSI EKSEKUSI HAPUS (GABUNGAN UNTUK TUGAS & LAMPIRAN)
+  // FUNGSI EKSEKUSI HAPUS (GABUNGAN UNTUK TUGAS & LAMPIRAN)
   const executeDelete = async () => {
     if (!deleteModal.id || !deleteModal.type) return;
 
@@ -157,6 +174,22 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
             <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
               <Briefcase size={14} /> {project.client?.company || "Proyek Internal"}
             </p>
+
+            {/* KUMPULAN TOMBOL GENERATE DOKUMEN */}
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={() => setIsQuotationModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition shadow-sm">
+                <FileText size={14} /> Buat Quotation
+              </button>
+              <button onClick={() => setIsSPKModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded hover:bg-gray-800 transition shadow-sm">
+                <Printer size={14} /> Cetak SPK
+              </button>
+              <button onClick={() => setIsBASTModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 text-white text-xs font-medium rounded hover:bg-orange-600 transition shadow-sm">
+                <ShieldCheck size={14} /> Serah Terima (BAST)
+              </button>
+              <button onClick={() => setIsSignatureModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded hover:bg-emerald-700 transition shadow-sm">
+                <PenTool size={14} /> TTD Klien
+              </button>
+            </div>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-700 bg-white rounded-full shadow-sm">
             <X size={20} />
@@ -196,7 +229,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
                     {task.is_done ? <CheckCircle2 size={18} className="text-green-500 shrink-0" /> : <Circle size={18} className="text-gray-300 shrink-0" />}
                     <span className={`text-sm ${task.is_done ? "line-through text-gray-400" : "text-gray-700"}`}>{task.title}</span>
                   </div>
-                  {/* 🚀 TOMBOL HAPUS TUGAS MEMANGGIL MODAL */}
+                  {/* TOMBOL HAPUS TUGAS */}
                   <button onClick={() => setDeleteModal({ isOpen: true, type: "task", id: task.id })} className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:text-red-600 transition-opacity">
                     <Trash2 size={16} />
                   </button>
@@ -248,7 +281,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
                       <a href={file.file_url} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title={isImage ? "Lihat Penuh" : "Baca Dokumen"}>
                         <Eye size={16} />
                       </a>
-                      {/* 🚀 TOMBOL HAPUS LAMPIRAN MEMANGGIL MODAL */}
+                      {/* TOMBOL HAPUS LAMPIRAN */}
                       <button onClick={() => setDeleteModal({ isOpen: true, type: "attachment", id: file.id })} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Hapus">
                         <Trash2 size={16} />
                       </button>
@@ -268,7 +301,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
         </div>
       </div>
 
-      {/* 🚀 MODAL KONFIRMASI (GLOBAL UNTUK TUGAS & LAMPIRAN) */}
+      {/* MODAL KONFIRMASI & QUOTATION */}
       <ConfirmModal
         isOpen={deleteModal.isOpen}
         title={deleteModal.type === "task" ? "Hapus Tugas?" : "Hapus Lampiran?"}
@@ -277,6 +310,11 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
         onClose={() => setDeleteModal({ isOpen: false, type: null, id: null })}
         onConfirm={executeDelete}
       />
+
+      <QuotationModal isOpen={isQuotationModalOpen} onClose={() => setIsQuotationModalOpen(false)} project={project} />
+      <SignatureModal isOpen={isSignatureModalOpen} onClose={() => setIsSignatureModalOpen(false)} onSave={(base64) => setClientSignature(base64)} clientName={project.client?.name} />
+      <SPKModal isOpen={isSPKModalOpen} onClose={() => setIsSPKModalOpen(false)} project={project} clientSignature={clientSignature} />
+      <BASTModal isOpen={isBASTModalOpen} onClose={() => setIsBASTModalOpen(false)} project={project} clientSignature={clientSignature} />
     </>
   );
 }
