@@ -1,6 +1,6 @@
-/* eslint-disable @next/next/no-img-element */
 import { forwardRef } from "react";
 import { Invoice } from "@/types";
+import Letterhead from "../pdf/Letterhead";
 
 interface Props {
   invoice: Invoice | null;
@@ -10,11 +10,11 @@ interface Props {
 const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, ref) => {
   // Gunakan data dari props database, jika kosong gunakan default
   const profile = agency || {
-    company: "Jalcode Agency",
+    company: "Jalcode",
     name: "Muhammad Alwi",
     logo: "/logo/logoRemove.png",
-    email: "jalcodeid@gmail.com",
-    phone: "08804207761",
+    email: "hello@jalcode.com",
+    phone: "0852-1333-3166",
   };
 
   const formatRupiah = (angka: number) => {
@@ -26,100 +26,118 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
   };
 
   return (
-    <div className="absolute top-0 -left-2499.75 -z-50 bg-white">
-      <div ref={ref} className="w-[210mm] min-h-[297mm] p-12 bg-white text-black font-sans box-border relative">
+    <div className="absolute top-0 -left-[3000px] -z-50 bg-white">
+      <div ref={ref} className="bg-white text-black px-12 py-8 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border">
         {invoice && (
           <>
-            {/* KOP SURAT JALCODE TER-SINKRONISASI */}
-            <div className="flex justify-between items-start mb-12 border-b-4 border-black pb-6">
-              <div className="flex items-center gap-4">
-                <img src={profile.logo || "/logo/logoRemove.png"} alt="Logo Agensi" className="w-16 h-16 object-contain" crossOrigin="anonymous" />
-                <div>
-                  <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{profile.company}</h1>
-                  <p className="text-blue-600 font-bold tracking-widest text-xs uppercase mt-1">Digital Solutions</p>
-                </div>
-              </div>
-              <div className="text-right text-gray-500 text-sm leading-relaxed">
-                <p className="font-bold text-gray-800">{profile.company}</p>
-                <p>Makassar, Sulawesi Selatan, Indonesia</p>
-                <p>
-                  {profile.email} | {profile.phone}
+            {/* 🚀 KOP SURAT REUSABLE */}
+            <Letterhead />
+
+            {/* 🚀 JUDUL DOKUMEN (Disamakan dengan SPK/BAST) */}
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-widest">INVOICE / TAGIHAN</h2>
+              <p className="text-gray-600 mt-1 text-xs font-sans font-medium">Nomor: {invoice.invoice_number}</p>
+            </div>
+
+            {/* INFO KLIEN & TANGGAL */}
+            <div className="flex justify-between items-start mb-8">
+              <div className="w-1/2">
+                <p className="font-bold text-gray-800 text-xs uppercase mb-1">Kepada Yth:</p>
+                <p className="text-lg font-bold">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(invoice as any).project?.client?.name || invoice.client_name || "Klien Internal"} / {(invoice as any).project?.client?.company || "-"}
                 </p>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <p className="text-gray-600">{(invoice as any).project?.client?.address || "Makassar"}</p>
+              </div>
+
+              <div className="w-1/2 flex justify-end">
+                <table className="text-sm text-left">
+                  <tbody>
+                    <tr>
+                      <td className="py-1 pr-4 text-gray-500 font-medium">Tanggal Terbit</td>
+                      <td className="py-1 font-bold text-gray-900">: {formatDate(invoice.issue_date)}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1 pr-4 text-gray-500 font-medium">Jatuh Tempo</td>
+                      <td className="py-1 font-bold text-red-600">: {formatDate(invoice.due_date)}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            {/* INFO INVOICE & CLIENT */}
-            <div className="flex justify-between mb-12">
-              <div>
-                <h2 className="text-gray-400 font-bold uppercase tracking-wider text-sm mb-2">Tagihan Kepada:</h2>
-                <p className="text-xl font-bold text-gray-800">{invoice.client_name || "Klien Internal"}</p>
-                <p className="text-gray-600 mt-1">
-                  Proyek: <span className="font-semibold">{invoice.project_title}</span>
-                </p>
-              </div>
-              <div className="text-right bg-slate-50 p-4 rounded-xl border border-slate-100 min-w-62.5">
-                <h2 className="text-3xl font-black text-blue-600 mb-1">INVOICE</h2>
-                <p className="text-gray-800 font-bold text-lg mb-4">{invoice.invoice_number}</p>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-500">Tanggal Terbit:</span> <span className="font-semibold">{formatDate(invoice.issue_date)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Jatuh Tempo:</span> <span className="font-semibold text-red-600">{formatDate(invoice.due_date)}</span>
-                </div>
-              </div>
+            {/* TABEL RINCIAN TAGIHAN */}
+            <div className="mb-10">
+              <h3 className="font-bold bg-blue-50 px-2 py-1 border-l-4 border-blue-600 mb-3 uppercase tracking-wider text-xs">Rincian Tagihan</h3>
+              <table className="w-full border-collapse border border-gray-300 text-[13px]">
+                <thead>
+                  <tr className="bg-gray-100 text-left">
+                    <th className="p-2.5 border border-gray-300">Deskripsi Pekerjaan</th>
+                    <th className="p-2.5 border border-gray-300 text-center w-20">Kuantitas</th>
+                    <th className="p-2.5 border border-gray-300 text-right w-36">Harga Satuan</th>
+                    <th className="p-2.5 border border-gray-300 text-right w-36">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* 🚀 LOOPING ITEM DINAMIS DARI DATABASE */}
+                  {invoice.items && invoice.items.length > 0 ? (
+                    invoice.items.map((item, idx) => (
+                      <tr key={idx}>
+                        <td className="p-2.5 border border-gray-300 text-justify">
+                          <p className="font-bold text-gray-900 leading-tight">{item.description}</p>
+                        </td>
+                        <td className="p-2.5 border border-gray-300 text-center">{item.quantity}</td>
+                        <td className="p-2.5 border border-gray-300 text-right font-mono">{formatRupiah(item.price)}</td>
+                        <td className="p-2.5 border border-gray-300 text-right font-mono font-bold">{formatRupiah(item.total)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    // Fallback jika data item lama (tanpa rincian)
+                    <tr>
+                      <td className="p-2.5 border border-gray-300 font-bold">{invoice.service_type}</td>
+                      <td className="p-2.5 border border-gray-300 text-center">1</td>
+                      <td className="p-2.5 border border-gray-300 text-right font-mono">{formatRupiah(invoice.amount)}</td>
+                      <td className="p-2.5 border border-gray-300 text-right font-mono font-bold">{formatRupiah(invoice.amount)}</td>
+                    </tr>
+                  )}
+
+                  {/* BARIS TOTAL */}
+                  <tr className="bg-blue-600 text-white font-bold text-sm">
+                    <td colSpan={3} className="p-3 border border-blue-700 text-right uppercase tracking-wider">
+                      TOTAL TAGIHAN
+                    </td>
+                    <td className="p-3 border border-blue-700 text-right">{formatRupiah(invoice.amount)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            {/* TABEL RINCIAN */}
-            <table className="w-full mb-12 border-collapse">
-              <thead>
-                <tr className="bg-slate-900 text-white text-left text-sm uppercase tracking-wider">
-                  <th className="p-4 rounded-tl-xl font-medium w-1/2">Deskripsi Layanan</th>
-                  <th className="p-4 font-medium text-center">Kategori</th>
-                  <th className="p-4 rounded-tr-xl font-medium text-right">Total Biaya</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700">
-                <tr className="border-b border-gray-200">
-                  <td className="p-4 py-6 font-semibold text-gray-900">{invoice.notes || `Pembayaran untuk pengerjaan ${invoice.project_title}`}</td>
-                  <td className="p-4 py-6 text-center">{invoice.service_type}</td>
-                  <td className="p-4 py-6 text-right font-bold">{formatRupiah(invoice.amount)}</td>
-                </tr>
-              </tbody>
-            </table>
+            {/* INSTRUKSI PEMBAYARAN & TTD */}
+            <div className="flex justify-between items-start break-inside-avoid mt-12">
+              <div className="w-3/5 pr-8">
+                <h3 className="font-bold bg-blue-50 px-2 py-1 border-l-4 border-blue-600 mb-3 uppercase tracking-wider text-xs">Instruksi Pembayaran</h3>
+                <p className="mb-2 text-gray-800">Mohon melakukan transfer ke rekening resmi kami:</p>
+                <ul className="space-y-1 mb-6 font-bold text-gray-900">
+                  <li>Bank: Bank Central Asia (BCA)</li>
+                  <li>Nomor Rekening: 1234567890</li>
+                  <li>Atas Nama: {profile.name}</li>
+                </ul>
 
-            {/* TOTAL & REKENING (QRIS) */}
-            <div className="flex justify-between items-start">
-              <div className="w-1/2 pr-8">
-                <h3 className="font-bold text-gray-800 mb-2 border-b pb-2">Informasi Pembayaran</h3>
-                <div className="w-40 h-40 p-2 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 flex items-center justify-center">
-                  <img src="/logo/qris.jpeg" alt="QRIS Pembayaran Jalcode" className="max-w-full max-h-full object-contain" crossOrigin="anonymous" />
+                <div className="text-[11px] text-gray-500 italic p-3 bg-gray-50 border-l-2 border-gray-300 space-y-1">
+                  <p className="font-bold text-gray-600 not-italic mb-1">Catatan:</p>
+                  <p>- Mohon kirimkan bukti transfer ke WhatsApp atau Email Jalcode.</p>
+                  <p>- Tagihan ini merupakan dokumen resmi yang sah secara hukum.</p>
                 </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  Atas Nama: <span className="font-bold text-gray-800">{profile.company}</span>
-                </p>
               </div>
 
-              <div className="w-1/2 bg-blue-50 p-6 rounded-2xl">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-600 font-semibold">Subtotal</span>
-                  <span className="text-gray-800 font-bold">{formatRupiah(invoice.amount)}</span>
-                </div>
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-gray-600 font-semibold">Pajak (0%)</span>
-                  <span className="text-gray-800 font-bold">Rp 0</span>
-                </div>
-                <div className="flex justify-between items-center pt-4 border-t border-blue-200">
-                  <span className="text-lg font-black text-gray-900">Total Tagihan</span>
-                  <span className="text-2xl font-black text-blue-600">{formatRupiah(invoice.amount)}</span>
+              <div className="w-2/5 text-center pt-4">
+                <p className="mb-20 text-gray-800">Hormat Kami,</p>
+                <div className="relative inline-block">
+                  <p className="font-bold text-md underline uppercase">{profile.name}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Finance & Management</p>
                 </div>
               </div>
-            </div>
-
-            {/* TANDA TANGAN DINAMIS */}
-            <div className="absolute bottom-16 right-12 text-center">
-              <p className="text-gray-500 mb-16">Hormat Kami,</p>
-              <p className="font-bold text-gray-900 border-b border-gray-400 pb-1 inline-block px-4">{profile.name}</p>
-              <p className="text-sm text-gray-500 mt-1">Founder {profile.company}</p>
             </div>
           </>
         )}

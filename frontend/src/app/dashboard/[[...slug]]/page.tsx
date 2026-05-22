@@ -38,6 +38,7 @@ import ContentModal from "@/components/ui/ContentModal";
 import InvoiceModal from "@/components/ui/InvoiceModal";
 import TeamModal from "@/components/ui/TeamModal";
 import useSWR from "swr";
+import FeeCalculatorModal from "@/components/ui/FeeCalculatorModal";
 
 const fetcher = async (url: string) => {
   const res = await fetchWithAuth(url);
@@ -67,6 +68,8 @@ export default function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFounder, setIsFounder] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("kanban");
+  const [isFeeModalOpen, setIsFeeModalOpen] = useState(false);
+  const [selectedInvoiceForFee, setSelectedInvoiceForFee] = useState<Invoice | null>(null);
 
   // --- STATE UI & RESPONSIVE ---
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -408,6 +411,10 @@ export default function DashboardPage() {
                 setIsInvoiceModalOpen(true);
               }}
               onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${id}`, "Tagihan dihapus!", mutateDashboard, true)}
+              onCalculateFee={(inv) => {
+                setSelectedInvoiceForFee(inv);
+                setIsFeeModalOpen(true);
+              }}
             />
           </div>
         );
@@ -544,6 +551,7 @@ export default function DashboardPage() {
       <CredentialPanel isOpen={isCredentialPanelOpen} onClose={() => setIsCredentialPanelOpen(false)} client={selectedClientForVault} />
       <ContentModal isOpen={isContentModalOpen} onClose={() => setIsContentModalOpen(false)} onSuccess={mutateDashboard} editData={editingContent} teams={teams} />
       <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} onSuccess={mutateDashboard} editData={editingInvoice} projects={projects} />
+      <FeeCalculatorModal isOpen={isFeeModalOpen} onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />
     </div>
   );
 }

@@ -102,5 +102,14 @@ export interface Invoice {
   due_date: string;
   service_type: string;
   notes: string;
+  items?: InvoiceItem[];
   created_at: string;
+}
+
+export interface InvoiceItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  price: number;
+  total: number;
 }
