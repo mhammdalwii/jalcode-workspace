@@ -130,7 +130,7 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
             <strong>Termin III (20%):</strong> Pelunasan sebelum sistem diluncurkan (Go-Live).
           </li>
         </ul>
-        <p className="mt-3 text-sm font-semibold">Rekening Pembayaran: Bank BNI a/n Muhammad Alwi (1234567890).</p>
+        <p className="mt-3 text-sm font-semibold">Rekening Pembayaran: Bank BNI a/n Muhammad Alwi (1851048968).</p>
       </div>
 
       {/* PENUTUP & TTD */}
