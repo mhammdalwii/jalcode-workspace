@@ -8,7 +8,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { HistoryIcon, KanbanSquare, LayoutList, Menu } from "lucide-react";
 import dynamic from "next/dynamic";
 
-import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice } from "@/types";
+import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice, Pricelist, Category } from "@/types";
 import { isAdminOrFounder } from "@/utils/auth";
 import { fetchWithAuth } from "@/utils/fetchApi";
 
@@ -39,6 +39,10 @@ import InvoiceModal from "@/components/ui/InvoiceModal";
 import TeamModal from "@/components/ui/TeamModal";
 import useSWR from "swr";
 import FeeCalculatorModal from "@/components/ui/FeeCalculatorModal";
+import PricelistTable from "@/components/tables/PricelistTable";
+import PricelistModal from "@/components/ui/PricelistModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import ContentListTable from "@/components/tables/ContentListTable";
 
 const fetcher = async (url: string) => {
   const res = await fetchWithAuth(url);
@@ -61,6 +65,8 @@ export default function DashboardPage() {
   const contents: ContentPlan[] = dashboardRes?.data?.contents || [];
   const invoices: Invoice[] = dashboardRes?.data?.invoices || [];
   const agencyProfile = dashboardRes?.data?.agency || null;
+  const pricelists: Pricelist[] = dashboardRes?.data?.pricelists || [];
+  const categories: Category[] = dashboardRes?.data?.categories || [];
 
   const [activities, setActivities] = useState<ActivityLog[]>([]);
 
@@ -83,6 +89,7 @@ export default function DashboardPage() {
     mentorship: "mentees",
     "kalender-konten": "contents",
     "data-tagihan": "invoices",
+    "katalog-harga": "pricelist",
     pengaturan: "settings",
   };
   const tabToUrl: Record<string, string> = {
@@ -93,6 +100,7 @@ export default function DashboardPage() {
     mentees: "mentorship",
     contents: "kalender-konten",
     invoices: "data-tagihan",
+    pricelist: "katalog-harga",
     settings: "pengaturan",
   };
 
@@ -117,6 +125,10 @@ export default function DashboardPage() {
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
+  // --- STATE MODAL PRICELIST ---
+  const [isPricelistModalOpen, setIsPricelistModalOpen] = useState(false);
+  const [editingPricelist, setEditingPricelist] = useState<Pricelist | null>(null);
+
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -131,6 +143,13 @@ export default function DashboardPage() {
   const [editingTeam, setEditingTeam] = useState<TeamMember | null>(null);
   const [isSubmittingTeam, setIsSubmittingTeam] = useState(false);
   const [teamFormData, setTeamFormData] = useState({ name: "", role: "Web Developer", email: "", password: "" });
+
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    url: string;
+    successMsg: string;
+    onRefresh: () => void;
+  } | null>(null);
+  const [isDeletingData, setIsDeletingData] = useState(false);
 
   useEffect(() => {
     setIsAdmin(isAdminOrFounder());
@@ -167,6 +186,25 @@ export default function DashboardPage() {
     }
   };
 
+  const executeDeleteGlobal = async () => {
+    if (!deleteConfirm) return;
+    setIsDeletingData(true);
+    try {
+      const res = await fetchWithAuth(deleteConfirm.url, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Gagal menghapus data");
+      }
+      toast.success(deleteConfirm.successMsg);
+      deleteConfirm.onRefresh();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsDeletingData(false);
+      setDeleteConfirm(null);
+    }
+  };
+
   // --- LOGIKA FILTER PENCARIAN TERPUSAT ---
   const query = searchQuery.toLowerCase();
 
@@ -181,6 +219,8 @@ export default function DashboardPage() {
   const filteredContents = contents.filter((c) => (c.title.toLowerCase().includes(query) || (c.pics && c.pics.some((p) => p.name.toLowerCase().includes(query)))) && (filterStatus === "All" || c.status === filterStatus));
 
   const filteredInvoices = invoices.filter((i) => i.invoice_number.toLowerCase().includes(query) || (i.client_name || i.project_title).toLowerCase().includes(query));
+
+  const filteredPricelists = pricelists.filter((p) => p.service_name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
 
   // --- DELEGASI RENDER KONTEN (MEMBUAT KODE LEBIH RAPI) ---
   const renderActiveTab = () => {
@@ -357,7 +397,7 @@ export default function DashboardPage() {
                 setIsContentModalOpen(true);
               }}
             />
-            <ContentKanban
+            <ContentListTable
               contents={filteredContents}
               isAdmin={isAdmin}
               isFounder={isFounder}
@@ -379,9 +419,9 @@ export default function DashboardPage() {
                   if (!res.ok) throw new Error("Gagal mengubah status");
 
                   toast.success(`Status dipindah ke ${newStatus}`);
-                  mutateDashboard(); // 🚀 Refaktor SWR
+                  mutateDashboard();
                 } catch (err) {
-                  toast.error("Terjadi kesalahan saat memindah kartu");
+                  toast.error("Terjadi kesalahan saat memindah status");
                 }
               }}
             />
@@ -415,6 +455,32 @@ export default function DashboardPage() {
                 setSelectedInvoiceForFee(inv);
                 setIsFeeModalOpen(true);
               }}
+            />
+          </div>
+        );
+
+      case "pricelist":
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <SectionHeader
+              title="Katalog Standar Harga Layanan"
+              count={filteredPricelists.length}
+              badgeColor="blue"
+              buttonText="Tambah Item Harga"
+              isAdmin={isAdmin}
+              onAdd={() => {
+                setEditingPricelist(null);
+                setIsPricelistModalOpen(true);
+              }}
+            />
+            <PricelistTable
+              pricelists={filteredPricelists}
+              isAdmin={isAdmin}
+              onEdit={(item) => {
+                setEditingPricelist(item);
+                setIsPricelistModalOpen(true);
+              }}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/pricelists/${id}`, "Item harga dihapus!", mutateDashboard, true)}
             />
           </div>
         );
@@ -510,7 +576,7 @@ export default function DashboardPage() {
 
       {/* SEMUA MODAL BERADA DI BAWAH SINI */}
       <ProjectDetailPanel isOpen={isDetailPanelOpen} onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={mutateDashboard} />
-      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingProject} clients={clients} />
+      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingProject} clients={clients} categories={categories} />
       <ClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={mutateDashboard} editData={editingClient} />
       <MenteeModal isOpen={isMenteeModalOpen} onClose={() => setIsMenteeModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingMentee} />
       <TeamModal
@@ -552,6 +618,8 @@ export default function DashboardPage() {
       <ContentModal isOpen={isContentModalOpen} onClose={() => setIsContentModalOpen(false)} onSuccess={mutateDashboard} editData={editingContent} teams={teams} />
       <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} onSuccess={mutateDashboard} editData={editingInvoice} projects={projects} />
       <FeeCalculatorModal isOpen={isFeeModalOpen} onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />
+      <PricelistModal isOpen={isPricelistModalOpen} onClose={() => setIsPricelistModalOpen(false)} onSuccess={mutateDashboard} editData={editingPricelist} categories={categories} />
+      <ConfirmModal isOpen={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} onConfirm={executeDeleteGlobal} isLoading={isDeletingData} title={""} message={""} />
     </div>
   );
 }

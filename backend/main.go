@@ -54,6 +54,8 @@ func main() {
 		&models.Invoice{}, 
 		&models.AgencyProfile{},
 		&models.InvoiceItem{},
+		&models.Pricelist{},
+		&models.Category{},
 	)
 
 	if errMigrate != nil {
@@ -110,6 +112,8 @@ func main() {
 	routes.InvoiceRoutes(r)
 	routes.AgencyRoutes(r)
 	routes.DashboardRoutes(r)
+	routes.SetupPricelistRoutes(r)
+	routes.SetupCategoryRoutes(r)
 	
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

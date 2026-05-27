@@ -46,3 +46,15 @@ export const menteeSchema = z.object({
 });
 
 export type MenteeFormValues = z.infer<typeof menteeSchema>;
+
+// ==========================================
+//  SCHEMA KATALOG HARGA (PRICELIST)
+// ==========================================
+export const pricelistSchema = z.object({
+  service_name: z.string().min(3, { message: "Nama layanan/paket minimal 3 karakter" }),
+  category: z.string().min(1, { message: "Kategori wajib dipilih" }),
+  price: z.number().min(1, { message: "Harga standar tidak boleh Rp 0" }),
+  description: z.string().optional(),
+});
+
+export type PricelistFormValues = z.infer<typeof pricelistSchema>;

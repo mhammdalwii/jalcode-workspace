@@ -49,6 +49,9 @@ func GetContents(c *gin.Context) {
 			Title:       contentItem.Title,
 			Platform:    contentItem.Platform,
 			Status:      contentItem.Status,
+			Pillar:      contentItem.Pillar,     
+            Priority:    contentItem.Priority,  
+            AssetURL:    contentItem.AssetURL,
 			PublishDate: contentItem.PublishDate,
 			PICs:        picsResponse, 
 			Notes:       contentItem.Notes,
@@ -93,8 +96,11 @@ func CreateContent(c *gin.Context) {
 		Title:       req.Title,
 		Platform:    req.Platform,
 		Status:      req.Status,
+		Pillar:      req.Pillar,     
+        Priority:    req.Priority,   
+        AssetURL:    req.AssetURL,
 		PublishDate: pubDate,
-		PICs:        pics, // MASUKKAN ARRAY TEAM MEMBER KE STRUCT
+		PICs:        pics, 
 		Notes:       req.Notes,
 	}
 
@@ -194,6 +200,9 @@ func UpdateContent(c *gin.Context) {
 	content.Title = req.Title
 	content.Platform = req.Platform
 	content.Status = req.Status
+	content.Pillar = req.Pillar    
+    content.Priority = req.Priority 
+    content.AssetURL = req.AssetURL
 	content.PublishDate = pubDate
 	content.Notes = req.Notes
 

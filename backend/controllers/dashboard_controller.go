@@ -17,6 +17,8 @@ func GetDashboardInit(c *gin.Context) {
 	var contents []models.ContentPlan
 	var invoices []models.Invoice
 	var agency models.AgencyProfile
+	var pricelists []models.Pricelist
+	var categories []models.Category
 
 	// 1. Tarik Data Dasar
 	config.DB.Find(&teams)
@@ -24,6 +26,8 @@ func GetDashboardInit(c *gin.Context) {
 	config.DB.Find(&mentees)
 	config.DB.Find(&invoices)
 	config.DB.Limit(1).Find(&agency)
+	config.DB.Order("category asc").Find(&pricelists)
+	config.DB.Order("name asc").Find(&categories)
 
 	// 2. Tarik Data Relasi
 	config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects)
@@ -76,7 +80,7 @@ func GetDashboardInit(c *gin.Context) {
 		})
 	}
 
-	// C. Bersihkan Content (Sesuai kode Kapten sebelumnya)
+	// Content 
 	var cleanContents []dto.ContentResponse
 	for _, cItem := range contents {
 		picsRes := []dto.TeamMemberResponse{}
@@ -86,9 +90,17 @@ func GetDashboardInit(c *gin.Context) {
 			})
 		}
 		cleanContents = append(cleanContents, dto.ContentResponse{
-			ID: cItem.ID, Title: cItem.Title, Platform: cItem.Platform,
-			Status: cItem.Status, PublishDate: cItem.PublishDate,
-			PICs: picsRes, Notes: cItem.Notes, CreatedAt: cItem.CreatedAt,
+			ID:          cItem.ID, 
+			Title:       cItem.Title, 
+			Platform:    cItem.Platform,
+			Status:      cItem.Status, 
+			Pillar:      cItem.Pillar,      
+			Priority:    cItem.Priority,   
+			AssetURL:    cItem.AssetURL,   
+			PublishDate: cItem.PublishDate,
+			PICs:        picsRes, 
+			Notes:       cItem.Notes, 
+			CreatedAt:   cItem.CreatedAt,
 		})
 	}
 
@@ -126,6 +138,8 @@ func GetDashboardInit(c *gin.Context) {
 			"contents": cleanContents,
 			"invoices": cleanInvoices,
 			"agency":   agency,
+			"pricelists": pricelists,
+			"categories": categories,
 		},
 	})
 }

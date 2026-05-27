@@ -84,6 +84,9 @@ export interface ContentPlan {
   title: string;
   platform: string;
   status: string; // "Ide", "Drafting", "Review", "Terjadwal", "Publish"
+  pillar?: string;
+  priority?: string;
+  asset_url?: string;
   publish_date: string | null;
   pics: TeamMember[];
   notes: string;
@@ -112,4 +115,18 @@ export interface InvoiceItem {
   quantity: number;
   price: number;
   total: number;
+}
+
+export interface Pricelist {
+  id: number;
+  service_name: string;
+  category: string;
+  price: number;
+  description: string;
+  created_at?: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
 }

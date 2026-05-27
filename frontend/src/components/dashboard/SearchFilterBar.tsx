@@ -1,7 +1,8 @@
 import { Search, Filter } from "lucide-react";
 
+// 🚀 TAMBAHKAN invoices DAN pricelist KE DALAM TYPE
 interface SearchFilterBarProps {
-  activeTab: "projects" | "teams" | "clients" | "mentees" | "contents";
+  activeTab: "projects" | "teams" | "clients" | "mentees" | "contents" | "invoices" | "pricelist" | string;
   searchQuery: string;
   setSearchQuery: (val: string) => void;
   filterStatus: string;
@@ -11,6 +12,28 @@ interface SearchFilterBarProps {
 }
 
 export default function SearchFilterBar({ activeTab, searchQuery, setSearchQuery, filterStatus, setFilterStatus, filterRole, setFilterRole }: SearchFilterBarProps) {
+  // FUNGSI UNTUK MENGGANTI TEKS BAYANGAN (PLACEHOLDER) SECARA DINAMIS
+  const getPlaceholderText = () => {
+    switch (activeTab) {
+      case "projects":
+        return "Cari nama proyek atau nama tim (PIC)...";
+      case "teams":
+        return "Cari nama anggota tim atau email...";
+      case "clients":
+        return "Cari nama klien atau nama perusahaan...";
+      case "mentees":
+        return "Cari nama mentee atau nama mentor...";
+      case "contents":
+        return "Cari judul konten atau PIC...";
+      case "invoices":
+        return "Cari no tagihan, nama proyek, atau klien...";
+      case "pricelist":
+        return "Cari nama layanan atau kategori...";
+      default:
+        return "Cari data...";
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
       {/* Search Bar (Muncul di Semua Tab) */}
@@ -18,7 +41,7 @@ export default function SearchFilterBar({ activeTab, searchQuery, setSearchQuery
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
         <input
           type="text"
-          placeholder="Cari nama, perusahaan, atau email..."
+          placeholder={getPlaceholderText()}
           className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-100 transition-shadow"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
