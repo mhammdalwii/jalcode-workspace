@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import toast from "react-hot-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Client, Project, TeamMember } from "@/types";
+import { Client, Project, TeamMember, Category } from "@/types";
 import { projectSchema, ProjectFormValues } from "@/validations";
 
 interface ProjectModalProps {
@@ -12,10 +12,11 @@ interface ProjectModalProps {
   onSuccess: () => void;
   teams: TeamMember[];
   clients: Client[];
+  categories: Category[];
   editData?: Project | null;
 }
 
-export default function ProjectModal({ isOpen, onClose, onSuccess, teams, clients, editData }: ProjectModalProps) {
+export default function ProjectModal({ isOpen, onClose, onSuccess, teams, clients, categories, editData }: ProjectModalProps) {
   const {
     register,
     handleSubmit,
@@ -28,7 +29,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
     defaultValues: {
       title: "",
       client_id: "",
-      category: "Web Application",
+      category: categories.length > 0 ? categories[0].name : "", // Default dinamis
       status: "Antrean",
       team_member_ids: [],
     },
@@ -38,10 +39,8 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
 
   useEffect(() => {
     register("team_member_ids");
-
     if (editData) {
       const picIds = editData.team_members?.map((pic) => pic.id) || [];
-
       reset({
         title: editData.title,
         category: editData.category,
@@ -49,22 +48,19 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
         client_id: editData.client_id ? String(editData.client_id) : "",
         team_member_ids: picIds,
       });
-
-      // 3. Pukul paksa nilainya agar Checkbox langsung terceklis di layar
       setValue("team_member_ids", picIds);
     } else {
       reset({
         title: "",
         client_id: "",
-        category: "Web Application",
+        category: categories.length > 0 ? categories[0].name : "", // Reset dinamis
         status: "Antrean",
         team_member_ids: [],
       });
       setValue("team_member_ids", []);
     }
-  }, [editData, isOpen, reset, setValue, register]);
+  }, [editData, isOpen, reset, setValue, register, categories]);
 
-  // Fungsi khusus untuk Toggle (Ceklis/Unceklis) PIC
   const handleTogglePIC = (id: number) => {
     if (selectedPICs.includes(id)) {
       setValue(
@@ -78,23 +74,17 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
 
   const onSubmit = async (data: ProjectFormValues) => {
     try {
-      const token = Cookies.get("token");
       const url = editData ? `${process.env.NEXT_PUBLIC_API_URL}/api/projects/${editData.id}` : `${process.env.NEXT_PUBLIC_API_URL}/api/projects/`;
       const method = editData ? "PUT" : "POST";
-
-      const payload = {
-        ...data,
-        client_id: data.client_id ? Number(data.client_id) : null,
-      };
+      const payload = { ...data, client_id: data.client_id ? Number(data.client_id) : null };
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Cookies.get("token")}` },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(`Gagal ${editData ? "memperbarui" : "menambahkan"} proyek`);
-
       toast.success(`Proyek berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
       onClose();
@@ -109,8 +99,8 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-bold mb-4 text-gray-900">{editData ? "Edit Proyek" : "Tambah Proyek Baru"}</h3>
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 text-gray-800">
+          {/* NAMA & KLIEN (Tetap Sama) */}
           <div>
             <label className="block text-sm font-medium mb-1">Nama Proyek *</label>
             <input type="text" {...register("title")} className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${errors.title ? "border-red-500 focus:ring-red-200" : "focus:ring-blue-200"}`} />
@@ -131,13 +121,17 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">Kategori</label>
+              <label className="block text-sm font-medium mb-1">Kategori *</label>
+              {/* 🚀 SELECT KATEGORI DINAMIS */}
               <select {...register("category")} className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200">
-                <option value="Web Application">Web Application</option>
-                <option value="Mobile Application">Mobile Application</option>
-                <option value="UI/UX & Brand Design">UI/UX & Brand Design</option>
-                <option value="IoT & Automation">IoT & Automation</option>
+                {categories.length === 0 && <option value="">Belum ada kategori</option>}
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
+              {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">Status</label>
@@ -150,7 +144,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
             </div>
           </div>
 
-          {/* CHECKBOX ANGGOTA TIM */}
+          {/* ... (SISA KODE PIC & TOMBOL TETAP SAMA) ... */}
           <div>
             <label className="block text-sm font-medium mb-2">Pilih Anggota Tim (Bisa lebih dari 1) *</label>
             <div className="max-h-40 overflow-y-auto border rounded-lg p-2 space-y-2 bg-gray-50/50">
