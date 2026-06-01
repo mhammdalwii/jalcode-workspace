@@ -12,15 +12,18 @@ interface ContentModalProps {
   teams: TeamMember[];
 }
 
+const PLATFORM_OPTIONS = ["Instagram", "TikTok", "LinkedIn", "Blog SEO", "YouTube", "Twitter", "Facebook"];
+
 export default function ContentModal({ isOpen, onClose, onSuccess, editData, teams }: ContentModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
-    platform: "Instagram",
+    platform: ["Instagram"] as string[],
     status: "Ide",
     pillar: "Edukasi",
     priority: "Sedang",
     asset_url: "",
+    start_date: "",
     publish_date: "",
     pic_ids: [] as number[],
     notes: "",
@@ -31,11 +34,12 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
       if (editData) {
         setFormData({
           title: editData.title,
-          platform: editData.platform,
+          platform: Array.isArray(editData.platform) ? editData.platform : [],
           status: editData.status,
           pillar: editData.pillar || "Edukasi",
           priority: editData.priority || "Sedang",
           asset_url: editData.asset_url || "",
+          start_date: editData.start_date ? editData.start_date.split("T")[0] : "",
           publish_date: editData.publish_date ? editData.publish_date.split("T")[0] : "",
           pic_ids: editData.pics ? editData.pics.map((p) => p.id) : [],
           notes: editData.notes || "",
@@ -43,11 +47,12 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
       } else {
         setFormData({
           title: "",
-          platform: "Instagram",
+          platform: ["Instagram"],
           status: "Ide",
           pillar: "Edukasi",
           priority: "Sedang",
           asset_url: "",
+          start_date: "",
           publish_date: "",
           pic_ids: [],
           notes: "",
@@ -59,18 +64,28 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
   if (!isOpen) return null;
 
   const togglePic = (id: number) => {
-    setFormData((prev) => {
-      if (prev.pic_ids.includes(id)) {
-        return { ...prev, pic_ids: prev.pic_ids.filter((picId) => picId !== id) };
-      } else {
-        return { ...prev, pic_ids: [...prev.pic_ids, id] };
-      }
-    });
+    setFormData((prev) => ({
+      ...prev,
+      pic_ids: prev.pic_ids.includes(id) ? prev.pic_ids.filter((p) => p !== id) : [...prev.pic_ids, id],
+    }));
+  };
+
+  const togglePlatform = (plat: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      platform: prev.platform.includes(plat) ? prev.platform.filter((p) => p !== plat) : [...prev.platform, plat],
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.platform.length === 0) return toast.error("Pilih minimal 1 Platform!");
     if (formData.pic_ids.length === 0) return toast.error("Pilih minimal 1 orang PIC!");
+
+    // Validasi Tanggal
+    if (formData.start_date && formData.publish_date && new Date(formData.start_date) > new Date(formData.publish_date)) {
+      return toast.error("Tgl Mulai tidak boleh lebih besar dari Deadline!");
+    }
 
     setIsSubmitting(true);
     try {
@@ -83,10 +98,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
         body: JSON.stringify(formData),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Gagal menyimpan konten");
-      }
+      if (!res.ok) throw new Error("Gagal menyimpan konten");
 
       toast.success(`Konten berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
@@ -123,38 +135,31 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Platform <span className="text-red-500">*</span>
-              </label>
-              <select value={formData.platform} onChange={(e) => setFormData({ ...formData, platform: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-sm bg-white">
-                <option value="Instagram">Instagram</option>
-                <option value="LinkedIn">LinkedIn</option>
-                <option value="Blog SEO">Blog SEO</option>
-                <option value="TikTok">TikTok</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Status <span className="text-red-500">*</span>
-              </label>
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-sm bg-white">
-                <option value="Ide">Ideation</option>
-                <option value="Drafting">Drafting</option>
-                <option value="Review">Review</option>
-                <option value="Terjadwal">Terjadwal</option>
-                <option value="Publish">Publish</option>
-              </select>
+          {/* 🚀 PLATFORM BISA PILIH BANYAK */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+              Platform Distribusi <span className="text-red-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {PLATFORM_OPTIONS.map((plat) => {
+                const isSelected = formData.platform.includes(plat);
+                return (
+                  <button
+                    key={plat}
+                    type="button"
+                    onClick={() => togglePlatform(plat)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition border ${isSelected ? "bg-blue-100 text-blue-700 border-blue-300 shadow-sm" : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"}`}
+                  >
+                    {plat}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 🚀 BARIS BARU: PILAR & PRIORITAS */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Pilar Konten <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pilar Konten</label>
               <select value={formData.pillar} onChange={(e) => setFormData({ ...formData, pillar: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-sm bg-white">
                 <option value="Edukasi">Edukasi & Tips</option>
                 <option value="Portofolio Proyek">Portofolio Proyek</option>
@@ -164,9 +169,7 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Prioritas <span className="text-red-500">*</span>
-              </label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Prioritas</label>
               <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-sm bg-white">
                 <option value="Tinggi">Tinggi 🔴</option>
                 <option value="Sedang">Sedang 🟡</option>
@@ -175,7 +178,6 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
             </div>
           </div>
 
-          {/* 🚀 BARIS BARU: URL LINK ASET */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
               <Link size={12} /> Tautan Aset / Draft (Opsional)
@@ -189,47 +191,59 @@ export default function ContentModal({ isOpen, onClose, onSuccess, editData, tea
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
-              Pilih PIC Tim (Bisa lebih dari 1) <span className="text-red-500">*</span>
-            </label>
-            <div className="border border-gray-200 rounded-xl max-h-32 overflow-y-auto p-2 bg-gray-50/50 space-y-1">
-              {teams.map((t) => {
-                const isSelected = formData.pic_ids.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => togglePic(t.id)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors border ${isSelected ? "bg-blue-50 border-blue-200 text-blue-700 font-medium" : "bg-white border-transparent text-gray-700 hover:bg-gray-100"}`}
-                  >
-                    <span>
-                      {t.name} <span className="text-[10px] text-gray-400 ml-1">({t.role})</span>
-                    </span>
-                    {isSelected && <Check size={16} className="text-blue-600" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
+          {/* 🚀 RENTANG WAKTU (START - DEADLINE) */}
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tgl Tayang (Opsional)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Mulai Dikerjakan</label>
+              <input
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-xs bg-white text-gray-700"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Deadline / Publish</label>
               <input
                 type="date"
                 value={formData.publish_date}
                 onChange={(e) => setFormData({ ...formData, publish_date: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl outline-none text-sm bg-white text-gray-700"
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl outline-none text-xs bg-white text-gray-700"
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Catatan Tambahan (Opsional)</label>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
+                Pilih PIC Tim <span className="text-red-500">*</span>
+              </label>
+              <div className="border border-gray-200 rounded-xl max-h-24 overflow-y-auto p-1.5 bg-gray-50/50 space-y-1">
+                {teams.map((t) => {
+                  const isSelected = formData.pic_ids.includes(t.id);
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => togglePic(t.id)}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors border ${isSelected ? "bg-blue-50 border-blue-200 text-blue-700 font-bold" : "bg-white border-transparent text-gray-700 hover:bg-gray-100"}`}
+                    >
+                      <span>
+                        {t.name.split(" ")[0]} <span className="text-[9px] text-gray-400">({t.role})</span>
+                      </span>
+                      {isSelected && <Check size={14} className="text-blue-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Catatan Tambahan</label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                rows={2}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-blue-500 outline-none resize-none text-sm bg-white"
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-blue-500 outline-none resize-none text-xs bg-white"
                 placeholder="Referensi link, hashtag, dll..."
               ></textarea>
             </div>

@@ -5,6 +5,7 @@ import (
 	"jalcode-api/dto"
 	"jalcode-api/models"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -89,14 +90,21 @@ func GetDashboardInit(c *gin.Context) {
 				ID: pic.ID, Name: pic.Name, Role: pic.Role, Email: pic.Email,
 			})
 		}
+		
+		var platforms []string
+		if cItem.Platform != "" {
+			platforms = strings.Split(cItem.Platform, ", ")
+		}
+
 		cleanContents = append(cleanContents, dto.ContentResponse{
 			ID:          cItem.ID, 
 			Title:       cItem.Title, 
-			Platform:    cItem.Platform,
+			Platform:    platforms,       
 			Status:      cItem.Status, 
 			Pillar:      cItem.Pillar,      
-			Priority:    cItem.Priority,   
-			AssetURL:    cItem.AssetURL,   
+			Priority:    cItem.Priority,    
+			AssetURL:    cItem.AssetURL, 
+			StartDate:   cItem.StartDate,   
 			PublishDate: cItem.PublishDate,
 			PICs:        picsRes, 
 			Notes:       cItem.Notes, 

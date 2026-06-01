@@ -82,11 +82,12 @@ export interface Credential {
 export interface ContentPlan {
   id: number;
   title: string;
-  platform: string;
+  platform: string[];
   status: string; // "Ide", "Drafting", "Review", "Terjadwal", "Publish"
   pillar?: string;
   priority?: string;
   asset_url?: string;
+  start_date?: string;
   publish_date: string | null;
   pics: TeamMember[];
   notes: string;
