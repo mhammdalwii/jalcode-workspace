@@ -10,7 +10,8 @@ type ContentPlan struct {
 	Pillar      string       `json:"pillar"`       
 	Priority    string       `json:"priority"`    
 	AssetURL    string       `json:"asset_url"`
-	PublishDate *time.Time   `json:"publish_date"`    // Tanggal tayang
+	StartDate   *time.Time   `json:"start_date"`
+	PublishDate *time.Time   `json:"publish_date"`
 	PICs        []TeamMember `json:"pics" gorm:"many2many:content_plan_pics;"` 
 	Notes       string       `json:"notes"`
 	CreatedAt   time.Time    `json:"created_at"`

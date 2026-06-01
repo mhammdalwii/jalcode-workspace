@@ -29,11 +29,11 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
   const getPlatformStyle = (platform: string) => {
     switch (platform.toLowerCase()) {
       case "instagram":
-        return { icon: <AtSign size={14} />, color: "text-pink-600 bg-pink-50 border-pink-200" };
+        return { icon: <AtSign size={12} />, color: "text-pink-600 bg-pink-50 border-pink-200" };
       case "blog seo":
-        return { icon: <Globe size={14} />, color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
+        return { icon: <Globe size={12} />, color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
       default:
-        return { icon: <MessageSquare size={14} />, color: "text-slate-600 bg-slate-100 border-slate-200" };
+        return { icon: <MessageSquare size={12} />, color: "text-blue-600 bg-blue-50 border-blue-200" };
     }
   };
 
@@ -46,7 +46,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
     );
   };
 
-  // 🚀 FUNGSI HELPER UNTUK BADGE PRIORITAS
   const getPriorityBadge = (priority?: string) => {
     switch (priority?.toLowerCase()) {
       case "tinggi":
@@ -62,14 +61,14 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
 
   return (
     <>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-32">
         <table className="w-full text-sm text-left text-gray-700">
           <thead className="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 w-[30%] font-semibold tracking-wider">Judul & Aset Konten</th>
-              <th className="px-6 py-4 font-semibold tracking-wider w-36">Platform & Pilar</th>
+              <th className="px-6 py-4 w-[28%] font-semibold tracking-wider">Judul & Aset Konten</th>
+              <th className="px-6 py-4 font-semibold tracking-wider w-40">Platform & Pilar</th>
               <th className="px-6 py-4 font-semibold tracking-wider w-36">Status</th>
-              <th className="px-6 py-4 font-semibold tracking-wider w-36">Jadwal Publish</th>
+              <th className="px-6 py-4 font-semibold tracking-wider w-40">Timeline Pengerjaan</th>
               <th className="px-6 py-4 font-semibold tracking-wider">PIC Tim</th>
               {isAdmin && <th className="px-6 py-4 font-semibold tracking-wider text-center w-24">Aksi</th>}
             </tr>
@@ -86,20 +85,20 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
               </tr>
             ) : (
               contents.map((content) => {
-                const plat = getPlatformStyle(content.platform);
                 const isWaitingApproval = content.status === "Ide" && !isFounder;
                 const isRejected = content.status === "Ditolak";
 
+                // Pastikan array platform
+                const platforms = Array.isArray(content.platform) ? content.platform : [content.platform];
+
                 return (
                   <tr key={content.id} className="hover:bg-slate-50/50 transition-colors group">
-                    {/* 🚀 KOLOM 1: JUDUL, PRIORITAS, ASET & CATATAN */}
                     <td className="px-6 py-4 align-top">
                       <div className="flex items-start gap-2 mb-2">
                         <p className="font-bold text-slate-900 leading-snug">{content.title}</p>
                         {getPriorityBadge(content.priority)}
                       </div>
 
-                      {/* Tautan Aset Konten */}
                       {content.asset_url && (
                         <a
                           href={content.asset_url}
@@ -112,7 +111,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                         </a>
                       )}
 
-                      {/* Catatan */}
                       {content.notes && (
                         <div className={`p-2 rounded-lg text-[11px] border leading-relaxed ${isRejected ? "bg-red-50 border-red-100 text-red-700" : "bg-slate-50 border-slate-100 text-slate-500"}`}>
                           <div className={`flex items-center gap-1 mb-0.5 font-bold uppercase tracking-wider ${isRejected ? "text-red-500" : "text-slate-400"}`}>
@@ -126,19 +124,25 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                       )}
                     </td>
 
-                    {/* 🚀 KOLOM 2: PLATFORM & PILAR */}
                     <td className="px-6 py-4 align-top">
                       <div className="flex flex-col gap-2 items-start">
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded border text-[11px] font-bold uppercase tracking-wide ${plat.color}`}>
-                          {plat.icon} {content.platform}
-                        </span>
+                        {/* 🚀 MAP MULTIPLE PLATFORM */}
+                        <div className="flex flex-wrap gap-1.5 items-start">
+                          {platforms.map((plat, idx) => {
+                            const pStyle = getPlatformStyle(plat);
+                            return (
+                              <span key={idx} className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wide ${pStyle.color}`}>
+                                {pStyle.icon} {plat}
+                              </span>
+                            );
+                          })}
+                        </div>
                         <span className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
                           <Tag size={12} className="text-slate-400" /> {content.pillar || "Umum"}
                         </span>
                       </div>
                     </td>
 
-                    {/* KOLOM 3: STATUS & AKSI APPROVAL */}
                     <td className="px-6 py-4 align-top">
                       <div className="flex flex-col gap-2 items-start">
                         {isWaitingApproval ? (
@@ -159,7 +163,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                           getStatusBadge(content.status)
                         )}
 
-                        {/* TOMBOL APPROVE/REJECT KHUSUS FOUNDER */}
                         {isFounder && content.status === "Ide" && (
                           <div className="flex gap-1.5 mt-1">
                             <button
@@ -184,21 +187,28 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                       </div>
                     </td>
 
-                    {/* KOLOM 4: TANGGAL PUBLISH */}
+                    {/* 🚀 KOLOM TIMELINE (START & DEADLINE) */}
                     <td className="px-6 py-4 align-top">
-                      {content.publish_date && content.publish_date !== "0001-01-01T00:00:00Z" ? (
-                        <div className="flex flex-col gap-1 text-xs font-medium text-slate-700">
-                          <div className="flex items-center gap-1.5 text-slate-500">
-                            <Calendar size={14} /> Jadwal:
-                          </div>
-                          <span className="font-bold text-slate-800">{new Date(content.publish_date).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      {content.start_date || content.publish_date ? (
+                        <div className="flex flex-col gap-1.5 text-[11px] font-medium text-slate-600">
+                          {content.start_date && (
+                            <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded border border-slate-100 w-max">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Mulai:</span>
+                              <span className="text-slate-700">{new Date(content.start_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                            </div>
+                          )}
+                          {content.publish_date && (
+                            <div className="flex items-center gap-1.5 bg-emerald-50 px-2 py-1 rounded border border-emerald-100 w-max">
+                              <span className="text-emerald-500 font-bold uppercase tracking-wider text-[9px]">Deadline:</span>
+                              <span className="text-emerald-700 font-bold">{new Date(content.publish_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span className="text-[11px] text-gray-400 italic px-2 py-1 bg-gray-50 rounded border border-dashed border-gray-200">Belum dijadwalkan</span>
                       )}
                     </td>
 
-                    {/* KOLOM 5: PIC */}
                     <td className="px-6 py-4 align-top">
                       <div className="flex flex-wrap gap-1.5">
                         {content.pics && content.pics.length > 0 ? (
@@ -213,7 +223,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                       </div>
                     </td>
 
-                    {/* KOLOM 6: AKSI */}
                     {isAdmin && (
                       <td className="px-6 py-4 align-top text-center">
                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -234,7 +243,7 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
         </table>
       </div>
 
-      {/* MODAL ALASAN PENOLAKAN */}
+      {/* MODAL PENOLAKAN & HAPUS TETAP SAMA */}
       {rejectModalId !== null && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -245,11 +254,10 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
               <h3 className="text-lg font-bold text-gray-900">Tolak Ide Konten</h3>
             </div>
             <div className="p-6">
-              <p className="text-sm text-gray-600 mb-3 font-medium">Berikan alasan penolakan agar tim dapat memperbaikinya:</p>
               <textarea
                 className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none resize-none bg-gray-50"
                 rows={4}
-                placeholder="Misal: Ide kurang relevan dengan target audiens..."
+                placeholder="Alasan penolakan..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
               />
@@ -275,11 +283,10 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
         </div>
       )}
 
-      {/* MODAL KONFIRMASI HAPUS */}
       <ConfirmModal
         isOpen={deleteModalId !== null}
         title="Hapus Rencana Konten?"
-        message="Apakah kamu yakin ingin menghapus rencana konten ini secara permanen?"
+        message="Yakin ingin menghapus secara permanen?"
         onClose={() => setDeleteModalId(null)}
         onConfirm={() => {
           if (deleteModalId !== null) {
