@@ -18,7 +18,6 @@ import TeamTable from "@/components/tables/TeamTable";
 import ClientTable from "@/components/tables/ClientTable";
 import MenteeTable from "@/components/tables/MenteeTable";
 import ProjectKanban from "@/components/tables/ProjectKanban";
-import ContentKanban from "@/components/tables/ContentKanban";
 import InvoiceTable from "@/components/tables/InvoiceTable";
 
 import StatCards from "@/components/dashboard/StatCards";
