@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Cookies from "js-cookie";
 import { Eye, EyeOff } from "lucide-react";
+import Image from "next/image";
+import logo from "@/assets/logo/logoRemove.png";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -34,8 +36,6 @@ export default function LoginPage() {
       Cookies.set("role", data.user.role, { expires: 1 });
 
       window.location.href = "/dashboard";
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
@@ -46,7 +46,10 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full p-8 bg-white rounded-xl shadow-lg">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center font-bold text-white text-3xl mx-auto mb-4 shadow-lg shadow-blue-500/30">J</div>
+          <div className="w-24 h-24 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+            <Image src={logo} alt="Logo" width={100} height={100} loading="eager" />
+          </div>
+
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Jalcode Workspace</h1>
           <p className="text-gray-500 mt-2 text-sm">Masuk untuk mengelola operasional agensi</p>
         </div>
