@@ -9,9 +9,26 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    depends_on:
+      - jalcode-redis
+    networks:
+      - jalcode-network
+
+  jalcode-redis:
+    image: redis:alpine
+    container_name: jalcode-redis-server
+    restart: always
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
     networks:
       - jalcode-network
 
 networks:
   jalcode-network:
     driver: bridge
+
+# VOLUME UNTUK REDIS
+volumes:
+  redis-data:
