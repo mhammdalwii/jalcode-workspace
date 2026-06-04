@@ -40,6 +40,7 @@ func main() {
 	}
 
 	config.ConnectDatabase()
+	config.ConnectRedis()
 	log.Println("Memulai migrasi database...")
 	errMigrate := config.DB.AutoMigrate(
 		&models.TeamMember{}, 
