@@ -8,7 +8,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// RDB adalah variabel global agar bisa dipanggil dari controller mana saja
 var RDB *redis.Client
 var Ctx = context.Background()
 
@@ -17,9 +16,9 @@ func ConnectRedis() {
 	redisPort := os.Getenv("REDIS_PORT")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 
-	// Fallback ke localhost jika environment variable tidak ditemukan (untuk testing lokal)
+	// Default otomatis diarahkan ke nama kontainer Docker
 	if redisHost == "" {
-		redisHost = "localhost"
+		redisHost = "jalcode-redis" 
 	}
 	if redisPort == "" {
 		redisPort = "6379"
@@ -31,11 +30,11 @@ func ConnectRedis() {
 		DB:       0,             
 	})
 
-	// Coba PING ke Redis untuk memastikan koneksi sukses
 	_, err := RDB.Ping(Ctx).Result()
 	if err != nil {
-		log.Fatal(" GAGAL TERHUBUNG KE REDIS:", err)
+		// Ganti log.Fatal menjadi log.Println
+		log.Println("⚠️ PERINGATAN: GAGAL TERHUBUNG KE REDIS. Sistem akan tetap berjalan tanpa Caching. Error:", err)
 	} else {
-		log.Println(" TERHUBUNG KE REDIS SERVER (Caching Ready!)")
+		log.Println("✅ TERHUBUNG KE REDIS SERVER (Caching Ready!)")
 	}
 }
