@@ -117,9 +117,7 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                             {isRejected ? <AlertTriangle size={12} /> : <MoreHorizontal size={12} />}
                             {isRejected ? "Catatan Penolakan" : "Catatan"}
                           </div>
-                          <span className="line-clamp-2" title={content.notes}>
-                            {content.notes}
-                          </span>
+                          <div className="max-h-24 overflow-y-auto whitespace-pre-line pr-1 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent">{content.notes}</div>
                         </div>
                       )}
                     </td>
