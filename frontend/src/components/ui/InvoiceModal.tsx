@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Calculator } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { Invoice, Project } from "@/types";
+import CurrencyInput from "@/components/ui/CurrencyInput"; // 🚀 1. IMPORT CURRENCY INPUT
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -21,11 +22,11 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
     status: "Unpaid",
     issue_date: new Date().toISOString().split("T")[0],
     due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    service_type: "Web App Development",
+    service_type: "", // 🚀 2. Dikosongkan agar Kapten wajib mengetik layanannya apa
     notes: "",
   });
 
-  // 🚀 STATE UNTUK RINCIAN ITEM
+  // STATE UNTUK RINCIAN ITEM
   const [items, setItems] = useState([{ description: "DP Pengerjaan Sistem (40%)", quantity: 1, price: 0, total: 0 }]);
 
   useEffect(() => {
@@ -36,10 +37,9 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
           status: editData.status,
           issue_date: editData.issue_date ? editData.issue_date.split("T")[0] : "",
           due_date: editData.due_date ? editData.due_date.split("T")[0] : "",
-          service_type: editData.service_type || "Web App Development",
+          service_type: editData.service_type || "", // Load layanan asli dari DB
           notes: editData.notes || "",
         });
-        // 🚀 Load items jika sedang mode Edit
         if (editData.items && editData.items.length > 0) {
           setItems(
             editData.items.map((i) => ({
@@ -56,7 +56,7 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
           status: "Unpaid",
           issue_date: new Date().toISOString().split("T")[0],
           due_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          service_type: "Web App Development",
+          service_type: "",
           notes: "",
         });
         setItems([{ description: "DP Pengerjaan Sistem (40%)", quantity: 1, price: 0, total: 0 }]);
@@ -67,31 +67,32 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
   if (!isOpen) return null;
 
   // Fungsi update item dinamis
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateItem = (index: number, field: string, value: any) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const newItems = [...items] as any;
     newItems[index][field] = value;
 
-    // Auto hitung total per baris
     if (field === "price" || field === "quantity") {
       newItems[index].total = newItems[index].price * newItems[index].quantity;
     }
     setItems(newItems);
   };
 
-  // Hitung total keseluruhan untuk dikirim ke field 'amount' di backend
   const grandTotal = items.reduce((acc, curr) => acc + curr.total, 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.project_id === 0) return toast.error("Silakan pilih proyek klien!");
+    if (!formData.service_type.trim()) return toast.error("Silakan isi kolom Jenis Layanan!"); // 🚀 Validasi pencegah kosong
     if (grandTotal <= 0) return toast.error("Total tagihan tidak boleh nol!");
 
     setIsSubmitting(true);
     const payload = {
       ...formData,
       project_id: Number(formData.project_id),
-      amount: grandTotal, // Total otomatis dari rincian
-      items: items, // Rincian item
+      amount: grandTotal,
+      items: items,
     };
 
     try {
@@ -109,6 +110,7 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
       toast.success(`Tagihan berhasil ${editData ? "diperbarui" : "diterbitkan"}!`);
       onSuccess();
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -127,11 +129,11 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
-          {/* INFO DASAR */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2 md:col-span-1">
+          {/* 🚀 3. STRUKTUR LAYOUT BARU: Proyek (Atas), Layanan & Status (Bawahnya) */}
+          <div className="space-y-4">
+            <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Proyek Klien</label>
-              <select required value={formData.project_id} onChange={(e) => setFormData({ ...formData, project_id: Number(e.target.value) })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-slate-50">
+              <select required value={formData.project_id} onChange={(e) => setFormData({ ...formData, project_id: Number(e.target.value) })} className="w-full px-3 py-2.5 border rounded-xl text-sm outline-none bg-slate-50 font-medium">
                 <option value={0} disabled>
                   -- Pilih Proyek --
                 </option>
@@ -142,17 +144,32 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
                 ))}
               </select>
             </div>
-            <div className="col-span-2 md:col-span-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none">
-                <option value="Unpaid">Unpaid</option>
-                <option value="Paid">Paid</option>
-                <option value="Overdue">Overdue</option>
-              </select>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Jenis Layanan</label>
+                {/* 🚀 KOTAK INPUT LAYANAN YANG SELAMA INI HILANG */}
+                <input
+                  required
+                  type="text"
+                  placeholder="Contoh: Web Dev / UI UX / SEO"
+                  value={formData.service_type}
+                  onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-blue-500 text-black font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Status</label>
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none font-bold">
+                  <option value="Unpaid">Unpaid</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Overdue font-bold text-red-600">Overdue</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          {/* 🚀 TABEL RINCIAN ITEM DINAMIS */}
+          {/* TABEL RINCIAN ITEM DINAMIS */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Rincian Pekerjaan</label>
             <div className="space-y-3">
@@ -161,22 +178,33 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
                   <div className="flex-1">
                     <input
                       placeholder="Deskripsi (misal: Desain UI/UX)"
-                      className="w-full bg-transparent border-b border-slate-200 focus:border-blue-500 outline-none text-sm py-1 mb-2 font-medium"
+                      className="w-full bg-transparent border-b border-slate-200 focus:border-blue-500 outline-none text-sm py-1 mb-2 font-medium text-black"
                       value={item.description}
                       onChange={(e) => updateItem(idx, "description", e.target.value)}
                     />
                     <div className="flex gap-4">
-                      <div className="w-20">
+                      <div className="w-16">
                         <p className="text-[10px] text-slate-400 uppercase font-bold">Qty</p>
-                        <input type="number" className="w-full bg-transparent outline-none text-sm font-bold" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))} />
+                        <input type="number" min={1} className="w-full bg-transparent outline-none text-sm font-bold text-black" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] text-slate-400 uppercase font-bold">Harga Satuan</p>
-                        <input type="number" className="w-full bg-transparent outline-none text-sm font-bold text-blue-600" value={item.price} onChange={(e) => updateItem(idx, "price", Number(e.target.value))} />
+                        <p className="text-[10px] text-slate-400 uppercase font-bold">Harga Satuan (Rp)</p>
+
+                        {/* 🚀 4. BOOM! MENGGUNAKAN CURRENCY INPUT */}
+                        <CurrencyInput
+                          value={item.price}
+                          onChange={(val) => updateItem(idx, "price", val)}
+                          className="w-full bg-transparent outline-none text-sm font-bold text-blue-600 focus:border-b focus:border-blue-300"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="w-32 text-right shrink-0">
+                        <p className="text-[10px] text-slate-400 uppercase font-bold">Subtotal</p>
+                        <p className="text-sm font-mono font-bold text-slate-700 pt-0.5">Rp {item.total.toLocaleString("id-ID")}</p>
                       </div>
                     </div>
                   </div>
-                  <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-red-500 pt-1">
+                  <button type="button" onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-red-500 pt-1 shrink-0">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -195,17 +223,23 @@ export default function InvoiceModal({ isOpen, onClose, onSuccess, editData, pro
               </div>
               <p className="text-sm font-medium text-slate-300">Total Tagihan</p>
             </div>
-            <p className="text-2xl font-black">Rp {grandTotal.toLocaleString("id-ID")}</p>
+            <p className="text-2xl font-black font-mono">Rp {grandTotal.toLocaleString("id-ID")}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Terbit</label>
-              <input required type="date" value={formData.issue_date} onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none" />
+              <input required type="date" value={formData.issue_date} onChange={(e) => setFormData({ ...formData, issue_date: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none bg-slate-50" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Jatuh Tempo</label>
-              <input required type="date" value={formData.due_date} onChange={(e) => setFormData({ ...formData, due_date: e.target.value })} className="w-full px-3 py-2 border rounded-xl text-sm outline-none text-red-600 font-bold" />
+              <input
+                required
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                className="w-full px-3 py-2 border rounded-xl text-sm outline-none text-red-600 font-bold bg-slate-50"
+              />
             </div>
           </div>
 
