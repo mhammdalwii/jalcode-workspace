@@ -1,10 +1,9 @@
 import { useRef, useState } from "react";
-import { Edit, Trash2, Download, ReceiptText, Calendar, FileDown, Calculator } from "lucide-react";
+import { Edit, Trash2, Printer, ReceiptText, Calendar, FileDown, Calculator } from "lucide-react"; // 🚀 Mengganti icon Download menjadi Printer
 import { Invoice } from "@/types";
 import toast from "react-hot-toast";
-import { jsPDF } from "jspdf";
+import { useReactToPrint } from "react-to-print"; // 🚀 IMPORT REACT-TO-PRINT
 import InvoiceTemplate from "@/components/ui/InvoiceTemplate";
-import { toPng } from "html-to-image";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 
 interface InvoiceTableProps {
@@ -13,6 +12,7 @@ interface InvoiceTableProps {
   onDelete: (id: number) => void;
   isAdmin: boolean;
   onCalculateFee?: (invoice: Invoice) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agencyProfile: any;
 }
 
@@ -21,7 +21,7 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
   const [printingId, setPrintingId] = useState<number | null>(null);
   const [selectedInvoiceForPrint, setSelectedInvoiceForPrint] = useState<Invoice | null>(null);
 
-  //  STATE UNTUK KONTROL MODAL HAPUS
+  // STATE UNTUK KONTROL MODAL HAPUS
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
 
   const formatRupiah = (angka: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
@@ -57,36 +57,26 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
       document.body.removeChild(link);
       toast.success("Data berhasil diekspor ke Excel/CSV!");
     } catch (error) {
+      console.error("Gagal export CSV:", error);
       toast.error("Gagal mengekspor data");
     }
   };
 
-  const handleDownloadPDF = async (invoice: Invoice) => {
-    try {
-      setPrintingId(invoice.id);
-      setSelectedInvoiceForPrint(invoice);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const element = printRef.current;
-      if (!element) throw new Error("Template PDF belum siap di layar.");
+  // 🚀 FUNGSI PEMICU PRINT / PREVIEW BROWSER
+  const handlePrintTrigger = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: selectedInvoiceForPrint ? `Invoice_Jalcode_${selectedInvoiceForPrint.invoice_number}` : "Invoice_Jalcode",
+  });
 
-      const dataUrl = await toPng(element, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" });
-      const elemWidth = element.offsetWidth;
-      const elemHeight = element.offsetHeight;
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (elemHeight * pdfWidth) / elemWidth;
+  // 🚀 LOGIKA BARU: Masukkan data ke state, tunggu 300ms agar render selesai, lalu buka Preview!
+  const handlePreviewPDF = (invoice: Invoice) => {
+    setPrintingId(invoice.id);
+    setSelectedInvoiceForPrint(invoice);
 
-      pdf.addImage(dataUrl, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${invoice.invoice_number}_Jalcode.pdf`);
-
-      toast.success("PDF berhasil diunduh dengan sempurna!");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      console.error("Error Cetak PDF:", err);
-      toast.error(err.message || "Gagal mencetak dokumen");
-    } finally {
+    setTimeout(() => {
+      handlePrintTrigger();
       setPrintingId(null);
-    }
+    }, 300);
   };
 
   if (!invoices || invoices.length === 0) {
@@ -154,12 +144,13 @@ export default function InvoiceTable({ invoices, onEdit, onDelete, isAdmin, agen
                     <button onClick={() => setDeleteModalId(inv.id)} className="text-red-600 hover:text-red-800" title="Hapus">
                       <Trash2 size={18} />
                     </button>
+                    {/* 🚀 TOMBOL CETAK / PREVIEW BARU */}
                     <button
-                      onClick={() => handleDownloadPDF(inv)}
+                      onClick={() => handlePreviewPDF(inv)}
                       disabled={printingId === inv.id}
                       className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-bold text-white transition ${printingId === inv.id ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-200"}`}
                     >
-                      <Download size={14} /> {printingId === inv.id ? "Mencetak..." : "PDF"}
+                      <Printer size={14} /> {printingId === inv.id ? "Memuat..." : "Cetak"}
                     </button>
                   </td>
                 )}
