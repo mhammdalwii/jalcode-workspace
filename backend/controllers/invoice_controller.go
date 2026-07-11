@@ -7,6 +7,7 @@ import (
 	"jalcode-api/models"
 	"jalcode-api/utils"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -144,6 +145,9 @@ func CreateInvoice(c *gin.Context) {
 		}
 		utils.LogActivity(userID, "Menerbitkan tagihan baru", invoiceNumber)
 	}
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Tagihan berhasil diterbitkan!", "data": invoice})
 }
@@ -209,6 +213,9 @@ func UpdateInvoice(c *gin.Context) {
 			utils.LogActivity(userID, "Mengubah status pembayaran", invoice.InvoiceNumber+" menjadi "+invoice.Status)
 		}
 	}
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Tagihan diperbarui!"})
 }
@@ -232,5 +239,80 @@ func DeleteInvoice(c *gin.Context) {
 
 	// GORM otomatis menghapus items karena ada constraint OnDelete:CASCADE
 	config.DB.Delete(&invoice)
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
 	c.JSON(http.StatusOK, gin.H{"message": "Tagihan berhasil dihapus"})
+}
+
+// @Summary Simpan Profit Sharing
+// @Description Menyimpan riwayat pembagian komisi ke tim
+// @Tags Invoices
+// @Accept json
+// @Produce json
+// @Router /api/invoices/{id}/profit [post]
+func SaveProfitSharing(c *gin.Context) {
+	invoiceIDStr := c.Param("id")
+	
+	// Gunakan library bawaan "strconv" yang lebih aman
+	importStrconv, errConv := strconv.ParseUint(invoiceIDStr, 10, 32)
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID tagihan tidak valid"})
+		return
+	}
+	invoiceID := uint(importStrconv)
+
+	var req struct {
+		Distributions []struct {
+			MemberID uint    `json:"member_id"`
+			Amount   float64 `json:"amount"`
+		} `json:"distributions"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Hapus catatan lama jika pernah dihitung ulang sebelumnya
+	config.DB.Where("invoice_id = ?", invoiceID).Delete(&models.ProfitSharing{})
+
+	// Cegah error GORM jika distribusi kosong
+	if len(req.Distributions) == 0 {
+		c.JSON(http.StatusOK, gin.H{"message": "Tidak ada data untuk disimpan"})
+		return
+	}
+
+	// Simpan data baru
+	var profits []models.ProfitSharing
+	for _, dist := range req.Distributions {
+		profits = append(profits, models.ProfitSharing{
+			InvoiceID: invoiceID,
+			MemberID:  dist.MemberID,
+			Amount:    dist.Amount,
+			CreatedAt: time.Now(),
+		})
+	}
+
+	// Cetak error ke terminal VPS jika gagal, agar kita tahu penyebab pastinya
+	if err := config.DB.Create(&profits).Error; err != nil {
+		fmt.Println("💥 ERROR DB CREATE PROFIT:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan profit sharing ke database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Pembagian komisi berhasil dikunci!"})
+}
+
+func GetProfitSharing(c *gin.Context) {
+	invoiceID := c.Param("id")
+	var profits []models.ProfitSharing
+
+	// Cari semua data pembagian komisi berdasarkan ID Invoice
+	if err := config.DB.Where("invoice_id = ?", invoiceID).Find(&profits).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil data komisi"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": profits})
 }

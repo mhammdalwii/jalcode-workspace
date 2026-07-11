@@ -57,6 +57,7 @@ func main() {
 		&models.InvoiceItem{},
 		&models.Pricelist{},
 		&models.Category{},
+		&models.ProfitSharing{},
 	)
 
 	if errMigrate != nil {

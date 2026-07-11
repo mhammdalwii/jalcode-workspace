@@ -15,5 +15,7 @@ func InvoiceRoutes(r *gin.Engine) {
 		invoiceGroup.POST("/", controllers.CreateInvoice)
 		invoiceGroup.PUT("/:id", controllers.UpdateInvoice)
 		invoiceGroup.DELETE("/:id", controllers.DeleteInvoice)
+		invoiceGroup.GET("/:id/profit", controllers.GetProfitSharing)
+		invoiceGroup.POST("/:id/profit", controllers.SaveProfitSharing)
 	}
 }
