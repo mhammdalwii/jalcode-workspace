@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"jalcode-api/config"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Mentee merepresentasikan peserta didik di program Jalcode Mentorship
 type Mentee struct {
@@ -13,4 +18,19 @@ type Mentee struct {
 	Mentor    *TeamMember `json:"mentor,omitempty" gorm:"foreignKey:MentorID" binding:"-"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func (i *Mentee) AfterSave(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
+}
+
+
+func (i *Mentee) AfterDelete(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
 }

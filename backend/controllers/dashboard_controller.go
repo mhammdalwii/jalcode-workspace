@@ -7,37 +7,30 @@ import (
 	"jalcode-api/models"
 	"net/http"
 	"strings"
+	"sync" // 🚀 IMPORT SYNC UNTUK GOROUTINES
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 )
 
 func GetDashboardInit(c *gin.Context) {
 	// 🚀 CEK BRANKAS REDIS (CACHING)
 	cacheKey := "dashboard_utama_data"
 
-	// ambil data dari Redis
-	cachedData, err := config.RDB.Get(config.Ctx, cacheKey).Result()
-	
-	// Jika data DITEMUKAN di Redis, langsung kirim! (Tanpa menyentuh PostgreSQL)
-	if err == redis.Nil {
-		// Data tidak ada di cache, lanjut ke database...
-	} else if err != nil {
-		// Ada error koneksi Redis, abaikan dan lanjut ke database agar aplikasi tidak mati
-	} else {
-		var responseData map[string]interface{}
-		json.Unmarshal([]byte(cachedData), &responseData)
-		
-		c.JSON(http.StatusOK, gin.H{
-			"data": responseData,
-			"source": "redis_cache ⚡", 
-		})
-		return
+	if config.RDB != nil {
+		cachedData, err := config.RDB.Get(config.Ctx, cacheKey).Result()
+		if err == nil {
+			var responseData map[string]interface{}
+			json.Unmarshal([]byte(cachedData), &responseData)
+			c.JSON(http.StatusOK, gin.H{
+				"data":   responseData,
+				"source": "redis_cache ⚡",
+			})
+			return
+		}
 	}
 
-
-	// JIKA REDIS KOSONG, KITA TARIK DARI POSTGRESQL (KODE LAMA)
+	// JIKA REDIS KOSONG, KITA TARIK DARI POSTGRESQL SECARA PARALEL! 🚀
 	var teams []models.TeamMember
 	var projects []models.Project
 	var clients []models.Client
@@ -48,19 +41,22 @@ func GetDashboardInit(c *gin.Context) {
 	var pricelists []models.Pricelist
 	var categories []models.Category
 
-	// Tarik Data Dasar
-	config.DB.Find(&teams)
-	config.DB.Find(&clients)
-	config.DB.Find(&mentees)
-	config.DB.Find(&invoices)
-	config.DB.Limit(1).Find(&agency)
-	config.DB.Order("category asc").Find(&pricelists)
-	config.DB.Order("name asc").Find(&categories)
+	// 🚀 GUNAKAN WAITGROUP UNTUK MENARIK 9 TABEL SECARA BERSAMAAN!
+	var wg sync.WaitGroup
+	wg.Add(9)
 
-	// Tarik Data Relasi
-	config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects)
-	config.DB.Preload("Items").Preload("Project").Preload("Project.Client").Find(&invoices)
-	config.DB.Preload("PICs").Order("created_at desc").Find(&contents)
+	go func() { defer wg.Done(); config.DB.Find(&teams) }()
+	go func() { defer wg.Done(); config.DB.Find(&clients) }()
+	go func() { defer wg.Done(); config.DB.Find(&mentees) }()
+	go func() { defer wg.Done(); config.DB.Limit(1).Find(&agency) }()
+	go func() { defer wg.Done(); config.DB.Order("category asc").Find(&pricelists) }()
+	go func() { defer wg.Done(); config.DB.Order("name asc").Find(&categories) }()
+	go func() { defer wg.Done(); config.DB.Preload("TeamMembers").Preload("Client").Preload("Tasks").Preload("Attachments").Find(&projects) }()
+	go func() { defer wg.Done(); config.DB.Preload("Items").Preload("Project").Preload("Project.Client").Find(&invoices) }()
+	go func() { defer wg.Done(); config.DB.Preload("PICs").Order("created_at desc").Find(&contents) }()
+
+	// Tunggu sampai kesembilan data selesai diambil...
+	wg.Wait()
 
 	// Bersihkan Tim
 	var cleanTeams []gin.H
@@ -70,7 +66,7 @@ func GetDashboardInit(c *gin.Context) {
 		})
 	}
 
-	//  Bersihkan Project
+	// Bersihkan Project
 	var cleanProjects []gin.H
 	for _, p := range projects {
 		var teamRes []gin.H
@@ -105,15 +101,15 @@ func GetDashboardInit(c *gin.Context) {
 				ID: pic.ID, Name: pic.Name, Role: pic.Role, Email: pic.Email,
 			})
 		}
-		
+
 		var platforms []string
 		if cItem.Platform != "" {
 			platforms = strings.Split(cItem.Platform, ", ")
 		}
 
 		cleanContents = append(cleanContents, dto.ContentResponse{
-			ID: cItem.ID, Title: cItem.Title, Platform: platforms, Status: cItem.Status, 
-			Pillar: cItem.Pillar, Priority: cItem.Priority, AssetURL: cItem.AssetURL, 
+			ID: cItem.ID, Title: cItem.Title, Platform: platforms, Status: cItem.Status,
+			Pillar: cItem.Pillar, Priority: cItem.Priority, AssetURL: cItem.AssetURL,
 			StartDate: cItem.StartDate, PublishDate: cItem.PublishDate,
 			PICs: picsRes, Notes: cItem.Notes, CreatedAt: cItem.CreatedAt,
 		})
@@ -136,7 +132,6 @@ func GetDashboardInit(c *gin.Context) {
 		})
 	}
 
-
 	finalData := gin.H{
 		"teams":      cleanTeams,
 		"projects":   cleanProjects,
@@ -149,14 +144,16 @@ func GetDashboardInit(c *gin.Context) {
 		"categories": categories,
 	}
 
-	// Ubah data Golang menjadi teks JSON
-	jsonBytes, errMarshal := json.Marshal(finalData)
-	if errMarshal == nil {
-		config.RDB.Set(config.Ctx, cacheKey, jsonBytes, 5*time.Minute)
+	// Simpan ke Redis (Cache selama 5 menit)
+	if config.RDB != nil {
+		jsonBytes, errMarshal := json.Marshal(finalData)
+		if errMarshal == nil {
+			config.RDB.Set(config.Ctx, cacheKey, jsonBytes, 5*time.Minute)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data": finalData,
-		"source": "postgresql 🐘",
+		"data":   finalData,
+		"source": "postgresql (paralel) 🐘⚡",
 	})
 }

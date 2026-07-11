@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, Calculator, PieChart, Wallet, Users, AlertTriangle } from "lucide-react";
+import { X, Calculator, PieChart, Wallet, Users, AlertTriangle, Save, Loader2 } from "lucide-react"; // 🚀 Tambah Loader2
 import { Invoice, Project } from "@/types";
+import toast from "react-hot-toast";
+import Cookies from "js-cookie";
 
 interface FeeCalculatorModalProps {
   isOpen: boolean;
@@ -10,36 +12,80 @@ interface FeeCalculatorModalProps {
 }
 
 export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }: FeeCalculatorModalProps) {
-  // Setup persentase default: Agensi 30%, Tim 70%
-  const [agencyPct, setAgencyPct] = useState(30);
-
-  // State untuk menyimpan persentase spesifik per anggota tim
+  const [agencyPct, setAgencyPct] = useState(20);
   const [memberPcts, setMemberPcts] = useState<Record<number, number>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // 🚀 State loading baru
 
   const teamMembers = project?.team_members || [];
   const memberCount = teamMembers.length;
 
-  // Reset & Inisialisasi persentase setiap modal dibuka
   useEffect(() => {
     if (isOpen && invoice) {
-      setAgencyPct(30); // Default potongan agensi
+      setIsLoading(true);
 
-      // Bagi rata persentase tim sebagai nilai awal (Bisa diedit manual nanti)
-      const initialPcts: Record<number, number> = {};
-      if (memberCount > 0) {
-        const evenSplit = Math.floor(100 / memberCount);
-        teamMembers.forEach((m, index) => {
-          // Anggota terakhir mendapatkan sisa pembagian agar pas 100%
-          initialPcts[m.id] = index === memberCount - 1 ? 100 - evenSplit * (memberCount - 1) : evenSplit;
-        });
-      }
-      setMemberPcts(initialPcts);
+      const fetchSavedData = async () => {
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${invoice.id}/profit`, {
+            headers: { Authorization: `Bearer ${Cookies.get("token")}` },
+          });
+          const json = await res.json();
+
+          if (json.data && json.data.length > 0) {
+            // 🚀 SKENARIO 1: DATA SUDAH PERNAH DISIMPAN SEBELUMNYA!
+            const savedProfits = json.data;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const totalTeamCut = savedProfits.reduce((acc: number, curr: any) => acc + curr.amount, 0);
+            const calcAgencyCut = invoice.amount - totalTeamCut;
+
+            // Kembalikan nominal menjadi bentuk persentase
+            setAgencyPct(Math.round((calcAgencyCut / invoice.amount) * 100));
+
+            const loadedMemberPcts: Record<number, number> = {};
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            savedProfits.forEach((p: any) => {
+              loadedMemberPcts[p.member_id] = Math.round((p.amount / totalTeamCut) * 100);
+            });
+            setMemberPcts(loadedMemberPcts);
+          } else {
+            // 🚀 SKENARIO 2: BELUM ADA DATA, PAKAI ATURAN TIERED OTOMATIS
+            if (invoice.amount <= 500000) setAgencyPct(10);
+            else setAgencyPct(20);
+
+            const initialPcts: Record<number, number> = {};
+            if (memberCount > 0) {
+              const evenSplit = Math.floor(100 / memberCount);
+              teamMembers.forEach((m, index) => {
+                initialPcts[m.id] = index === memberCount - 1 ? 100 - evenSplit * (memberCount - 1) : evenSplit;
+              });
+            }
+            setMemberPcts(initialPcts);
+          }
+        } catch (error) {
+          console.error("Gagal menarik data profit", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchSavedData();
     }
   }, [isOpen, invoice, memberCount, teamMembers]);
 
   if (!isOpen || !invoice) return null;
 
-  // Format Rupiah
+  // 🚀 Tampilan saat sedang menarik data dari database
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white p-8 rounded-2xl flex flex-col items-center shadow-2xl">
+          <Loader2 className="animate-spin text-emerald-600 mb-3" size={40} />
+          <p className="text-sm font-bold text-gray-700 animate-pulse">Menyelaraskan Brankas Data...</p>
+        </div>
+      </div>
+    );
+  }
+
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
   };
@@ -49,11 +95,43 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
   const agencyCut = (totalAmount * agencyPct) / 100;
   const teamCut = (totalAmount * teamPct) / 100;
 
-  // Hitung total persentase tim (Validasi harus 100%)
   const totalMemberPct = Object.values(memberPcts).reduce((acc, curr) => acc + (curr || 0), 0);
 
   const handleMemberPctChange = (id: number, value: number) => {
     setMemberPcts((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSaveToDB = async () => {
+    if (totalMemberPct !== 100) {
+      return toast.error("Total persentase tim harus 100%!");
+    }
+
+    setIsSaving(true);
+    const distributions = teamMembers.map((member) => ({
+      member_id: member.id,
+      amount: (teamCut * (memberPcts[member.id] || 0)) / 100,
+    }));
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/invoices/${invoice.id}/profit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Cookies.get("token")}`,
+        },
+        body: JSON.stringify({ distributions }),
+      });
+
+      if (!res.ok) throw new Error("Gagal menyimpan data profit sharing");
+
+      toast.success("Catatan komisi berhasil dikunci di database!");
+      onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -108,7 +186,7 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
             </div>
           </div>
 
-          {/* RINCIAN PER ANGGOTA TIM (DINAMIS) */}
+          {/* RINCIAN PER ANGGOTA TIM */}
           <div>
             <div className="flex justify-between items-center border-b pb-2 mb-3">
               <h4 className="font-bold text-gray-800 flex items-center gap-2">
@@ -116,7 +194,7 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
               </h4>
               {totalMemberPct !== 100 && memberCount > 0 && (
                 <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded flex items-center gap-1">
-                  <AlertTriangle size={12} /> Total: {totalMemberPct}% (Harus 100%)
+                  <AlertTriangle size={12} /> Total: {totalMemberPct}%
                 </span>
               )}
             </div>
@@ -137,7 +215,6 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
                       </div>
 
                       <div className="flex items-center gap-3">
-                        {/* 🚀 INPUT PERSENTASE INDIVIDUAL */}
                         <div className="flex items-center bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
                           <input
                             type="number"
@@ -149,7 +226,6 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
                           />
                           <span className="text-gray-500 text-sm font-bold">%</span>
                         </div>
-
                         <p className="font-bold text-green-600 w-24 text-right">{formatRupiah(mCut)}</p>
                       </div>
                     </div>
@@ -157,6 +233,16 @@ export default function FeeCalculatorModal({ isOpen, onClose, invoice, project }
                 })}
               </div>
             )}
+          </div>
+
+          <div className="pt-2">
+            <button
+              onClick={handleSaveToDB}
+              disabled={isSaving || memberCount === 0}
+              className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition disabled:bg-slate-400"
+            >
+              <Save size={18} /> {isSaving ? "Menyimpan..." : "Kunci & Simpan Catatan Komisi"}
+            </button>
           </div>
         </div>
       </div>

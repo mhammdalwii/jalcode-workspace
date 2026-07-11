@@ -27,10 +27,8 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
   };
 
   return (
-    <div className="absolute top-0 -left-[3000px] -z-50 bg-white">
-      {/* 🚀 RAHASIA 1: print:p-0, py-10, relative, box-border */}
+    <div className="absolute top-0 -left-750 -z-50 bg-white">
       <div ref={ref} className="bg-white text-black px-12 py-10 print:p-0 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border relative">
-        {/* 🚀 RAHASIA 2: Kunci paksa margin printer ke 20mm */}
         <style>{`
           @media print {
             @page {

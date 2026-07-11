@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"jalcode-api/config"
+	"time"
+
+	"gorm.io/gorm"
+)
 
 // Client merepresentasikan perusahaan atau entitas klien
 type Client struct {
@@ -14,4 +19,18 @@ type Client struct {
 	Credentials []Credential `json:"credentials" gorm:"foreignKey:ClientID"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (p *Client) AfterSave(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
+}
+
+func (p *Client) AfterDelete(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
 }

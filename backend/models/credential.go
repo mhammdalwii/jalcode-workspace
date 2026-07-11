@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"jalcode-api/config"
+	"time"
+
+	"gorm.io/gorm"
+)
+
 
 type Credential struct {
 	ID         uint      `json:"id" gorm:"primaryKey"`
@@ -12,4 +18,18 @@ type Credential struct {
 	ExpiryDate time.Time `json:"expiry_date"` // Tanggal kedaluwarsa hosting/domain
 	Notes      string    `json:"notes"`       // Catatan tambahan
 	CreatedAt  time.Time `json:"created_at"`
+}
+
+func (p *Credential) AfterSave(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
+}
+
+func (p *Credential) AfterDelete(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
 }

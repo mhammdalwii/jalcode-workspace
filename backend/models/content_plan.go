@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"jalcode-api/config"
+	"time"
+
+	"gorm.io/gorm"
+)
+
 
 type ContentPlan struct {
 	ID          uint         `json:"id" gorm:"primaryKey"`
@@ -15,4 +21,18 @@ type ContentPlan struct {
 	PICs        []TeamMember `json:"pics" gorm:"many2many:content_plan_pics;"` 
 	Notes       string       `json:"notes"`
 	CreatedAt   time.Time    `json:"created_at"`
+}
+
+func (p *ContentPlan) AfterSave(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
+}
+
+func (p *ContentPlan) AfterDelete(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
 }

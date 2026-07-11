@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"jalcode-api/config"
+	"time"
+
+	"gorm.io/gorm"
+)
+
 
 type TeamMember struct {
 ID        uint      `gorm:"primaryKey" json:"id"`
@@ -11,4 +17,19 @@ ID        uint      `gorm:"primaryKey" json:"id"`
 	Projects  []Project `gorm:"many2many:project_team_members;" json:"projects,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (i *TeamMember) AfterSave(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
+}
+
+
+func (i *TeamMember) AfterDelete(tx *gorm.DB) (err error) {
+	if config.RDB != nil {
+		config.RDB.Del(config.Ctx, "dashboard_utama_data")
+	}
+	return
 }
