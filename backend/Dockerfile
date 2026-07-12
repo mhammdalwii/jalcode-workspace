@@ -19,6 +19,9 @@ FROM alpine:latest
 
 WORKDIR /app
 
+RUN apk --no-cache add ca-certificates tzdata
+RUN mkdir -p uploads
+
 # file 'main' yang sudah jadi dari Stage 1
 COPY --from=builder /app/main .
 
