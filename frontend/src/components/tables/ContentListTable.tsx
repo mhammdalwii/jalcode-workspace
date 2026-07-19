@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Trash2, Calendar, MessageSquare, Globe, AtSign, CheckCircle2, XCircle, AlertTriangle, MoreHorizontal, ExternalLink, Tag } from "lucide-react";
 import { ContentPlan } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import Pagination from "@/components/ui/Pagination"; // 🚀 IMPOR KOMPONEN PAGINATION BARU
 
 interface ContentListTableProps {
   contents: ContentPlan[];
@@ -25,6 +26,20 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
   const [rejectModalId, setRejectModalId] = useState<number | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+
+  // 🚀 STATE PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [contents.length]);
+
+  const totalPages = Math.ceil(contents.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentContents = contents.slice(startIndex, endIndex);
 
   const getPlatformStyle = (platform: string) => {
     switch (platform.toLowerCase()) {
@@ -61,7 +76,7 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
 
   return (
     <>
-      <div className="overflow-x-auto pb-32">
+      <div className="overflow-x-auto pb-6">
         <table className="w-full text-sm text-left text-gray-700">
           <thead className="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-200">
             <tr>
@@ -84,11 +99,10 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                 </td>
               </tr>
             ) : (
-              contents.map((content) => {
+              // 🚀 GUNAKAN currentContents DARI SLICE
+              currentContents.map((content) => {
                 const isWaitingApproval = content.status === "Ide" && !isFounder;
                 const isRejected = content.status === "Ditolak";
-
-                // Pastikan array platform
                 const platforms = Array.isArray(content.platform) ? content.platform : [content.platform];
 
                 return (
@@ -124,7 +138,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
 
                     <td className="px-6 py-4 align-top">
                       <div className="flex flex-col gap-2 items-start">
-                        {/* 🚀 MAP MULTIPLE PLATFORM */}
                         <div className="flex flex-wrap gap-1.5 items-start">
                           {platforms.map((plat, idx) => {
                             const pStyle = getPlatformStyle(plat);
@@ -185,7 +198,6 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
                       </div>
                     </td>
 
-                    {/* 🚀 KOLOM TIMELINE (START & DEADLINE) */}
                     <td className="px-6 py-4 align-top">
                       {content.start_date || content.publish_date ? (
                         <div className="flex flex-col gap-1.5 text-[11px] font-medium text-slate-600">
@@ -241,9 +253,12 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
         </table>
       </div>
 
-      {/* MODAL PENOLAKAN & HAPUS TETAP SAMA */}
+      {/* 🚀 PANGGIL KOMPONEN PAGINATION DENGAN SANGAT ELEGAN */}
+      <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={contents.length} startIndex={startIndex} endIndex={endIndex} onPageChange={setCurrentPage} />
+
+      {/* MODAL PENOLAKAN IDE KONTEN */}
       {rejectModalId !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-5 border-b border-gray-100 flex items-center gap-3 bg-red-50/50">
               <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
@@ -281,6 +296,7 @@ export default function ContentListTable({ contents, onEdit, onDelete, onStatusC
         </div>
       )}
 
+      {/* MODAL KONFIRMASI HAPUS KONTEN */}
       <ConfirmModal
         isOpen={deleteModalId !== null}
         title="Hapus Rencana Konten?"

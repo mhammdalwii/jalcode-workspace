@@ -58,6 +58,8 @@ func main() {
 		&models.Pricelist{},
 		&models.Category{},
 		&models.ProfitSharing{},
+		&models.ProjectRequirement{}, 
+		&models.RequirementFeature{}, 
 	)
 
 	if errMigrate != nil {
