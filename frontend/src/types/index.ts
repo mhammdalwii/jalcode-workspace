@@ -17,6 +17,7 @@ export interface Project {
   client?: Client;
   tasks?: Task[];
   attachments?: Attachment[];
+  requirement?: ProjectRequirement;
 }
 
 export interface Client {
@@ -130,4 +131,21 @@ export interface Pricelist {
 export interface Category {
   id: number;
   name: string;
+}
+
+export interface RequirementFeature {
+  id?: number;
+  title: string;
+  description: string;
+}
+
+export interface ProjectRequirement {
+  id?: number;
+  project_id: number;
+  business_goal: string;
+  target_audience: string;
+  design_preferences: string;
+  tech_stack: string;
+  notes: string;
+  features: RequirementFeature[];
 }

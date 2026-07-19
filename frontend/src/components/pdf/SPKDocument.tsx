@@ -135,7 +135,6 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
           <div className="text-center w-1/2">
             <p className="mb-2 font-bold">PIHAK KEDUA</p>
             <div className="h-16 mb-1 flex items-center justify-center"></div>
-            {/* 🚀 NAMA & JABATAN DI AREA TTD KINI MENGIKUTI DROPDOWN SELECT */}
             <p className="font-bold">{pihakKeduaName}</p>
             <p className="text-xs text-gray-500">Jalcode Agency</p>
           </div>

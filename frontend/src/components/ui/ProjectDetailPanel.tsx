@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 import { useState, useRef } from "react";
-import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, Loader2, Eye, Printer, PenTool, ShieldCheck } from "lucide-react";
+import { X, CheckCircle2, Circle, Trash2, Plus, Briefcase, Paperclip, FileText, Loader2, Eye, Printer, PenTool, ShieldCheck, ClipboardList } from "lucide-react";
 import toast from "react-hot-toast";
 import Cookies from "js-cookie";
 import { useReactToPrint } from "react-to-print";
@@ -9,11 +9,11 @@ import { useReactToPrint } from "react-to-print";
 import { fetchWithAuth } from "@/utils/fetchApi";
 import { Project, Task, Attachment } from "@/types";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import SPKDocument from "@/components/pdf/SPKDocument";
 import QuotationModal from "@/components/ui/QuotationModal";
 import SignatureModal from "@/components/ui/SignatureModal";
 import SPKModal from "./SPKModal";
 import BASTModal from "./BASTModal";
+import RequirementModal from "./RequirementModal";
 
 interface ProjectDetailPanelProps {
   isOpen: boolean;
@@ -33,6 +33,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
   const [clientSignature, setClientSignature] = useState<string | null>(null);
   const [isSPKModalOpen, setIsSPKModalOpen] = useState(false);
   const [isBASTModalOpen, setIsBASTModalOpen] = useState(false);
+  const [isRequirementModalOpen, setIsRequirementModalOpen] = useState(false);
 
   const handlePrintSPK = useReactToPrint({
     contentRef: spkPrintRef,
@@ -177,6 +178,9 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
 
             {/* KUMPULAN TOMBOL GENERATE DOKUMEN */}
             <div className="flex flex-wrap gap-2 mt-4">
+              <button onClick={() => setIsRequirementModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-xs font-medium rounded hover:bg-purple-700 transition shadow-sm">
+                <ClipboardList size={14} /> Analisis Kebutuhan
+              </button>
               <button onClick={() => setIsQuotationModalOpen(true)} className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition shadow-sm">
                 <FileText size={14} /> Buat Quotation
               </button>
@@ -312,6 +316,7 @@ export default function ProjectDetailPanel({ isOpen, onClose, project, onRefresh
       />
 
       <QuotationModal isOpen={isQuotationModalOpen} onClose={() => setIsQuotationModalOpen(false)} project={project} />
+      <RequirementModal isOpen={isRequirementModalOpen} onClose={() => setIsRequirementModalOpen(false)} project={project} onRefresh={onRefresh} />
       <SignatureModal isOpen={isSignatureModalOpen} onClose={() => setIsSignatureModalOpen(false)} onSave={(base64) => setClientSignature(base64)} clientName={project.client?.name} />
       <SPKModal isOpen={isSPKModalOpen} onClose={() => setIsSPKModalOpen(false)} project={project} clientSignature={clientSignature} />
       <BASTModal isOpen={isBASTModalOpen} onClose={() => setIsBASTModalOpen(false)} project={project} clientSignature={clientSignature} />
