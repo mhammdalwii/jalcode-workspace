@@ -60,6 +60,8 @@ func main() {
 		&models.ProfitSharing{},
 		&models.ProjectRequirement{}, 
 		&models.RequirementFeature{}, 
+		&models.MeetingNote{},      
+		&models.MeetingActionItem{},
 	)
 
 	if errMigrate != nil {
@@ -118,6 +120,7 @@ func main() {
 	routes.DashboardRoutes(r)
 	routes.SetupPricelistRoutes(r)
 	routes.SetupCategoryRoutes(r)
+	routes.SetupMeetingRoutes(r)
 	
 	// r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	r.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

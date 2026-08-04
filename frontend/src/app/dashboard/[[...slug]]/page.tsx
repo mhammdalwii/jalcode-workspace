@@ -8,7 +8,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { HistoryIcon, KanbanSquare, LayoutList, Menu } from "lucide-react";
 import dynamic from "next/dynamic";
 
-import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice, Pricelist, Category } from "@/types";
+import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice, Pricelist, Category, MeetingNote } from "@/types";
 import { isAdminOrFounder } from "@/utils/auth";
 import { fetchWithAuth } from "@/utils/fetchApi";
 
@@ -42,6 +42,8 @@ import PricelistTable from "@/components/tables/PricelistTable";
 import PricelistModal from "@/components/ui/PricelistModal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import ContentListTable from "@/components/tables/ContentListTable";
+import MeetingTable from "@/components/tables/MeetingTable";
+import MeetingModal from "@/components/ui/MeetingModal";
 
 const fetcher = async (url: string) => {
   const res = await fetchWithAuth(url);
@@ -89,6 +91,7 @@ export default function DashboardPage() {
     "kalender-konten": "contents",
     "data-tagihan": "invoices",
     "katalog-harga": "pricelist",
+    "jurnal-rapat": "meetings",
     pengaturan: "settings",
   };
   const tabToUrl: Record<string, string> = {
@@ -100,6 +103,7 @@ export default function DashboardPage() {
     contents: "kalender-konten",
     invoices: "data-tagihan",
     pricelist: "katalog-harga",
+    meetings: "jurnal-rapat",
     settings: "pengaturan",
   };
 
@@ -142,6 +146,10 @@ export default function DashboardPage() {
   const [editingTeam, setEditingTeam] = useState<TeamMember | null>(null);
   const [isSubmittingTeam, setIsSubmittingTeam] = useState(false);
   const [teamFormData, setTeamFormData] = useState({ name: "", role: "Web Developer", email: "", password: "" });
+
+  // state meeting
+  const [meetings, setMeetings] = useState<MeetingNote[]>([]);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
     url: string;
@@ -203,6 +211,22 @@ export default function DashboardPage() {
       setDeleteConfirm(null);
     }
   };
+
+  const fetchMeetings = async () => {
+    try {
+      const res = await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/meetings/`);
+      const data = await res.json();
+      setMeetings(data.data || []);
+    } catch (err) {
+      toast.error("Gagal mengambil data jurnal rapat");
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "meetings") {
+      fetchMeetings();
+    }
+  }, [activeTab]);
 
   // --- LOGIKA FILTER PENCARIAN TERPUSAT ---
   const query = searchQuery.toLowerCase();
@@ -484,6 +508,26 @@ export default function DashboardPage() {
           </div>
         );
 
+      case "meetings":
+        return (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <SectionHeader title="Jurnal Rapat & Penugasan Tim" count={meetings.length} badgeColor="blue" buttonText="Buat Jurnal Baru" isAdmin={isAdmin} onAdd={() => setIsMeetingModalOpen(true)} />
+            <MeetingTable
+              meetings={meetings.filter((m) => m.title.toLowerCase().includes(query) || (m.notes || "").toLowerCase().includes(query))}
+              isAdmin={isAdmin}
+              onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/meetings/${id}`, "Jurnal rapat dihapus!", fetchMeetings, true)}
+              onToggleAction={async (actionId) => {
+                try {
+                  await fetchWithAuth(`${process.env.NEXT_PUBLIC_API_URL}/api/meetings/actions/${actionId}/status`, { method: "PATCH" });
+                  fetchMeetings();
+                } catch (err) {
+                  toast.error("Gagal mengubah status tugas");
+                }
+              }}
+            />
+          </div>
+        );
+
       case "settings":
         return (
           <div className="animate-in fade-in duration-500">
@@ -619,6 +663,7 @@ export default function DashboardPage() {
       <FeeCalculatorModal isOpen={isFeeModalOpen} onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />
       <PricelistModal isOpen={isPricelistModalOpen} onClose={() => setIsPricelistModalOpen(false)} onSuccess={mutateDashboard} editData={editingPricelist} categories={categories} />
       <ConfirmModal isOpen={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} onConfirm={executeDeleteGlobal} isLoading={isDeletingData} title={""} message={""} />
+      <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} project={null} teams={teams} onRefresh={fetchMeetings} />
     </div>
   );
 }

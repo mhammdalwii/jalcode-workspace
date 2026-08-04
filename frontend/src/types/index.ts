@@ -149,3 +149,22 @@ export interface ProjectRequirement {
   notes: string;
   features: RequirementFeature[];
 }
+
+export interface MeetingActionItem {
+  id?: number;
+  meeting_id?: number;
+  task: string;
+  pic_id: number;
+  pic?: TeamMember;
+  is_done?: boolean;
+}
+
+export interface MeetingNote {
+  id?: number;
+  project_id?: number | null;
+  title: string;
+  date: string;
+  notes: string;
+  action_items: MeetingActionItem[];
+  created_at?: string;
+}
