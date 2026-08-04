@@ -1,4 +1,4 @@
-import { Briefcase, Users, Building2, GraduationCap, CalendarRange, LayoutDashboard, LogOut, ChevronLeft, ChevronRight, X, Receipt, Settings, Tags } from "lucide-react";
+import { Briefcase, Users, Building2, GraduationCap, CalendarRange, LayoutDashboard, LogOut, ChevronLeft, ChevronRight, X, Receipt, Settings, Tags, ClipboardCheck } from "lucide-react";
 
 interface SidebarProps {
   activeTab: string;
@@ -22,6 +22,7 @@ export default function Sidebar({ activeTab, setActiveTab, isAdmin, onLogout, is
     { id: "clients", label: "Direktori Klien", icon: Building2 },
     { id: "mentees", label: "Mentorship", icon: GraduationCap },
     { id: "contents", label: "Kalender Konten", icon: CalendarRange },
+    { id: "meetings", label: "Jurnal Rapat", icon: ClipboardCheck },
     { id: "settings", label: "Pengaturan", icon: Settings },
   ];
 

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 var RDB *redis.Client
@@ -16,25 +16,32 @@ func ConnectRedis() {
 	redisPort := os.Getenv("REDIS_PORT")
 	redisPassword := os.Getenv("REDIS_PASSWORD")
 
-	// Default otomatis diarahkan ke nama kontainer Docker
+	// Deteksi Lingkungan
 	if redisHost == "" {
-		redisHost = "jalcode-redis" 
+		if os.Getenv("APP_ENV") == "production" {
+			redisHost = "jalcode-redis" 
+		} else {
+			redisHost = "localhost" 
+		}
 	}
 	if redisPort == "" {
 		redisPort = "6379"
 	}
 
-	RDB = redis.NewClient(&redis.Options{
+	// Buat koneksi sementara
+	client := redis.NewClient(&redis.Options{
 		Addr:     redisHost + ":" + redisPort,
-		Password: redisPassword, 
-		DB:       0,             
+		Password: redisPassword,
+		DB:       0,
 	})
 
-	_, err := RDB.Ping(Ctx).Result()
+	// Uji koneksi (Ping)
+	_, err := client.Ping(Ctx).Result()
 	if err != nil {
-		// Ganti log.Fatal menjadi log.Println
-		log.Println("⚠️ PERINGATAN: GAGAL TERHUBUNG KE REDIS. Sistem akan tetap berjalan tanpa Caching. Error:", err)
+		log.Println("⚠️ PERINGATAN: GAGAL TERHUBUNG KE REDIS. Sistem akan berjalan tanpa Caching. Error:", err)
+		RDB = nil 
 	} else {
-		log.Println("✅ TERHUBUNG KE REDIS SERVER (Caching Ready!)")
+		RDB = client 
+		log.Println("✅ TERHUBUNG KE REDIS SERVER (" + redisHost + ") - Caching Ready! ⚡")
 	}
 }
