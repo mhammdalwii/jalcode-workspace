@@ -43,13 +43,13 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
             {/* KOP SURAT */}
             <Letterhead />
 
-            {/* JUDUL DOKUMEN (Spasi bawah dipadatkan dari mb-8 ke mb-6) */}
+            {/* JUDUL DOKUMEN */}
             <div className="text-center mb-6">
-              <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-widest">INVOICE / TAGIHAN</h2>
+              <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-widest">TAGIHAN (INVOICE)</h2>
               <p className="text-gray-600 mt-1 text-xs font-sans font-medium">Nomor: {invoice.invoice_number}</p>
             </div>
 
-            {/* INFO KLIEN & TANGGAL (Spasi bawah dipadatkan dari mb-8 ke mb-6) */}
+            {/* INFO KLIEN & TANGGAL */}
             <div className="flex justify-between items-start mb-6">
               <div className="w-1/2">
                 <p className="font-bold text-gray-800 text-xs uppercase mb-1">Kepada Yth:</p>
@@ -77,7 +77,7 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
               </div>
             </div>
 
-            {/* TABEL RINCIAN TAGIHAN (Spasi bawah dipadatkan dari mb-10 ke mb-6) */}
+            {/* TABEL RINCIAN TAGIHAN */}
             <div className="mb-6">
               <h3 className="font-bold bg-blue-50 px-2 py-1 border-l-4 border-blue-600 mb-3 uppercase tracking-wider text-xs">Rincian Tagihan</h3>
               <table className="w-full border-collapse border border-gray-300 text-[13px]">
@@ -123,14 +123,14 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
               </table>
             </div>
 
-            {/* INSTRUKSI PEMBAYARAN & TTD (Dorongan atas dipotong dari mt-12 ke mt-6) */}
+            {/* INSTRUKSI PEMBAYARAN & TTD */}
             <div className="flex justify-between items-start break-inside-avoid mt-6">
               <div className="w-3/5 pr-8">
                 <h3 className="font-bold bg-blue-50 px-2 py-1 border-l-4 border-blue-600 mb-3 uppercase tracking-wider text-xs">Instruksi Pembayaran</h3>
                 <p className="mb-2 text-gray-800">Mohon melakukan transfer ke rekening resmi kami:</p>
                 <ul className="space-y-1 mb-4 font-bold text-gray-900">
-                  <li>Bank: Bank Central Asia (BCA)</li>
-                  <li>Nomor Rekening: 1234567890</li>
+                  <li>Bank: Bank Negara Indonesia (BNI)</li>
+                  <li>Nomor Rekening: 1851048968</li>
                   <li>Atas Nama: {profile.name}</li>
                 </ul>
 
@@ -142,11 +142,10 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
               </div>
 
               <div className="w-2/5 text-center pt-4">
-                {/* Spasi ttd dipangkas aman dari mb-20 ke mb-16 */}
                 <p className="mb-16 text-gray-800">Hormat Kami,</p>
                 <div className="relative inline-block">
                   <p className="font-bold text-md underline uppercase">{profile.name}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Finance & Management</p>
+                  <p className="text-[10px] uppercase tracking-widest text-gray-500 mt-1">Founder Jalcode</p>
                 </div>
               </div>
             </div>
