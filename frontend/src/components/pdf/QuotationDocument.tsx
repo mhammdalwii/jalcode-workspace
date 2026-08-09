@@ -36,7 +36,7 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
         @media print {
           @page {
             size: A4 portrait;
-            margin: 20mm 20mm; /* Jarak Atas-Bawah & Kiri-Kanan 20 milimeter */
+            margin: 20mm 20mm;
           }
         }
       `}</style>
@@ -45,10 +45,10 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
 
       {/* JUDUL SURAT & INFO */}
       <div className="text-center mb-8">
-        <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-wider">QUOTATION / SURAT PENAWARAN</h2>
+        <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-wider">PENAWARAN HARGA (QUOTATION)</h2>
         <div className="flex justify-center items-center gap-4 text-xs mt-1 text-gray-700 font-sans">
           <p>
-            No: QO/JC/{tahun}/{project.id.toString().padStart(4, "0")}
+            No: PH/JC/{tahun}/{project.id.toString().padStart(4, "0")}
           </p>
           <span className="text-gray-300">|</span>
           <p>Tanggal: {tanggal}</p>
@@ -144,7 +144,7 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
             <p className="mb-20">Hormat kami,</p>
             <div className="relative inline-block">
               <p className="font-bold text-md underline uppercase">MUHAMMAD ALWI</p>
-              <p className="text-xs uppercase tracking-widest text-gray-500 mt-1">Founder, Jalcode</p>
+              <p className="text-xs uppercase tracking-widest text-gray-500 mt-1">Founder Jalcode</p>
             </div>
           </div>
         </div>

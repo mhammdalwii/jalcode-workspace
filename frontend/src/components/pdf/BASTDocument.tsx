@@ -39,9 +39,9 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
       {/* KOP SURAT */}
       <Letterhead />
 
-      {/* JUDUL (Spasi bawah dipadatkan dari mb-8 ke mb-6) */}
+      {/* JUDUL */}
       <div className="text-center mb-6">
-        <h2 className="text-lg font-bold underline underline-offset-4 uppercase">Berita Acara Serah Terima (BAST)</h2>
+        <h2 className="text-lg font-bold underline underline-offset-4 uppercase">BERITA ACARA SERAH TERIMA (BAST)</h2>
         <p className="text-gray-600 mt-1 text-xs font-sans">
           Nomor: BAST/JC/{tahun}/{project.id.toString().padStart(4, "0")}
         </p>
@@ -51,7 +51,7 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
         Pada hari ini, <strong>{hari}</strong>, tanggal <strong>{tanggal}</strong> bulan <strong>{bulan}</strong> tahun <strong>{tahun}</strong>, bertempat di Makassar, kami yang bertanda tangan di bawah ini:
       </p>
 
-      {/* PIHAK 1 & 2 (Spasi bawah dipadatkan dari mb-8 ke mb-5, space-y-4 ke space-y-2.5) */}
+      {/* PIHAK 1 & 2 */}
       <div className="mb-5 space-y-2.5 ml-2">
         <div className="flex items-start gap-4">
           <p className="font-semibold w-4">1.</p>
@@ -59,7 +59,7 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
             <p>
               <strong>Muhammad Alwi</strong>
             </p>
-            <p className="text-xs text-gray-500 font-sans">Jabatan: CEO & Founder Jalcode</p>
+            <p className="text-xs text-gray-500 font-sans">Jabatan: Founder & CEO, Jalcode</p>
             <p>
               Selanjutnya disebut sebagai <strong>PIHAK KESATU (Pelaksana)</strong>.
             </p>
@@ -81,7 +81,7 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
 
       <p className="mb-3 font-bold">Dengan ini menyatakan bahwa:</p>
 
-      {/* RINCIAN PERNYATAAN (Spasi antar poin dipadatkan dari space-y-4 ke space-y-2.5) */}
+      {/* RINCIAN PERNYATAAN */}
       <div className="space-y-2.5 ml-2">
         <div className="flex items-start gap-3">
           <div className="min-w-[5px] mt-2 h-1.5 w-1.5 rounded-full bg-black"></div>
@@ -125,7 +125,7 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
         </div>
       </div>
 
-      {/* TANDA TANGAN (Dorongan atas dipotong drastis dari mt-12 ke mt-6, mb-8 ke mb-4) */}
+      {/* TANDA TANGAN */}
       <div className="mt-6 break-inside-avoid">
         <p className="text-right mb-4">
           Makassar, {tanggal} {bulan} {tahun}
@@ -135,7 +135,7 @@ const BASTDocument = forwardRef<HTMLDivElement, BASTProps>(({ project, clientSig
             <p className="mb-2 font-bold">PIHAK KESATU</p>
             <div className="h-16 mb-1"></div>
             <p className="font-bold underline uppercase">MUHAMMAD ALWI</p>
-            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-sans">CEO & Founder Jalcode</p>
+            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-sans">Founder Jalcode</p>
           </div>
           <div className="text-center w-1/2">
             <p className="mb-2 font-bold">PIHAK KEDUA</p>

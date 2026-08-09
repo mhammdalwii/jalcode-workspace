@@ -26,7 +26,7 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
   const formatRupiah = (num: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(num);
 
   const pihakKeduaName = pj ? pj.name : "Muhammad Alwi";
-  const pihakKeduaRole = pj ? pj.role : "Founder";
+  const pihakKeduaRole = pj ? pj.role : "Founder & CEO";
 
   return (
     <div ref={ref} className="bg-white text-black px-12 py-10 print:p-0 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border relative">
@@ -67,7 +67,6 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
         <div className="flex items-start gap-4">
           <p className="font-semibold w-4">2.</p>
           <p className="text-justify">
-            {/* 🚀 MENGGUNAKAN NAMA DINAMIS PJ YANG DIPILIH */}
             <strong>{pihakKeduaName}</strong>, bertindak untuk dan atas nama <strong>Jalcode</strong>, beralamat di Makassar, selanjutnya disebut sebagai <strong>PIHAK KEDUA</strong>.
           </p>
         </div>
@@ -136,7 +135,7 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
             <p className="mb-2 font-bold">PIHAK KEDUA</p>
             <div className="h-16 mb-1 flex items-center justify-center"></div>
             <p className="font-bold">{pihakKeduaName}</p>
-            <p className="text-xs text-gray-500">Jalcode Agency</p>
+            <p className="text-xs text-gray-500">{pihakKeduaRole}, Jalcode</p>
           </div>
         </div>
       </div>
