@@ -56,7 +56,16 @@ export default function DashboardPage() {
   const params = useParams();
   const slug = params?.slug?.[0];
 
-  const { data: dashboardRes, mutate: mutateDashboard, isLoading: isDashboardLoading } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard-utama`, fetcher);
+  const {
+    data: dashboardRes,
+    mutate: mutateDashboard,
+    isLoading: isDashboardLoading,
+  } = useSWR(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard-utama`, fetcher, {
+    shouldRetryOnError: true,
+    errorRetryCount: 3,
+    errorRetryInterval: 5000,
+    revalidateOnFocus: false,
+  });
 
   // --- STATE UTAMA ---
   const teams: TeamMember[] = dashboardRes?.data?.teams || [];
