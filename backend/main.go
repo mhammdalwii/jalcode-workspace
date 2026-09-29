@@ -69,6 +69,7 @@ func main() {
 	} else {
 		log.Println("✅ MIGRASI DATABASE SUKSES!")
 	}
+	config.DB.Exec("ALTER TABLE meeting_action_items DROP COLUMN IF EXISTS pic_id CASCADE;")
 	
 	var count int64
 	config.DB.Model(&models.TeamMember{}).Count(&count)

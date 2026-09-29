@@ -10,14 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Ambil semua daftar rapat (bisa difilter berdasarkan proyek)
+// Ambil semua daftar rapat
 func GetMeetings(c *gin.Context) {
 	var meetings []models.MeetingNote
 	
-	// Tarik data rapat beserta rincian Action Items dan profil anggota tim (PIC)
-	query := config.DB.Preload("ActionItems").Preload("ActionItems.PIC")
+	// 🚀 PRELOAD PICS (Banyak orang)
+	query := config.DB.Preload("ActionItems").Preload("ActionItems.PICs")
 
-	// Filter opsional: Jika frontend mengirim parameter project_id
 	if projectID := c.Query("project_id"); projectID != "" {
 		query = query.Where("project_id = ?", projectID)
 	}
@@ -30,7 +29,7 @@ func GetMeetings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": meetings})
 }
 
-// Simpan jurnal rapat baru beserta rincian tugasnya
+// Simpan jurnal rapat baru
 func CreateMeeting(c *gin.Context) {
 	var req dto.MeetingNoteReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -38,20 +37,24 @@ func CreateMeeting(c *gin.Context) {
 		return
 	}
 
-	// Konversi format string tanggal ke tipe time.Time
 	date, err := time.Parse("2006-01-02", req.Date)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Format tanggal salah. Gunakan YYYY-MM-DD"})
 		return
 	}
 
-	// Rakit Action Items
 	var actionItems []models.MeetingActionItem
 	for _, item := range req.ActionItems {
+		// 🚀 Cari profil tim berdasarkan ID yang dikirim
+		var selectedPICs []models.TeamMember
+		if len(item.PICIDs) > 0 {
+			config.DB.Where("id IN ?", item.PICIDs).Find(&selectedPICs)
+		}
+
 		actionItems = append(actionItems, models.MeetingActionItem{
 			Task:   item.Task,
-			PICID:  item.PICID,
-			IsDone: false, // Default: Belum selesai
+			PICs:   selectedPICs,
+			IsDone: false,
 		})
 	}
 
@@ -71,9 +74,75 @@ func CreateMeeting(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Jurnal rapat berhasil dikunci!", "data": meeting})
 }
 
+// 🚀 FUNGSI BARU: Edit Jurnal Rapat
+func UpdateMeeting(c *gin.Context) {
+	id := c.Param("id")
+	var req dto.MeetingNoteReq
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var existingMeeting models.MeetingNote
+	if err := config.DB.Preload("ActionItems").First(&existingMeeting, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Jurnal tidak ditemukan"})
+		return
+	}
+
+	date, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Format tanggal salah."})
+		return
+	}
+
+	// Hapus Action Items lama dan koneksi Many-to-Many
+	for _, oldAction := range existingMeeting.ActionItems {
+		config.DB.Model(&oldAction).Association("PICs").Clear()
+		config.DB.Delete(&oldAction)
+	}
+
+	// Rakit Action Items baru
+	var newActionItems []models.MeetingActionItem
+	for _, item := range req.ActionItems {
+		var selectedPICs []models.TeamMember
+		if len(item.PICIDs) > 0 {
+			config.DB.Where("id IN ?", item.PICIDs).Find(&selectedPICs)
+		}
+
+		newActionItems = append(newActionItems, models.MeetingActionItem{
+			Task: item.Task,
+			PICs: selectedPICs,
+		})
+	}
+
+	// Update data utama
+	existingMeeting.Title = req.Title
+	existingMeeting.Date = date
+	existingMeeting.Notes = req.Notes
+	existingMeeting.ProjectID = req.ProjectID
+	existingMeeting.ActionItems = newActionItems
+
+	if err := config.DB.Save(&existingMeeting).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate rapat"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Jurnal rapat berhasil diperbarui!"})
+}
+
 // Hapus jurnal rapat
 func DeleteMeeting(c *gin.Context) {
 	id := c.Param("id")
+	
+	// Bersihkan juga relasi Many-to-Many sebelum hapus agar rapi
+	var meeting models.MeetingNote
+	if err := config.DB.Preload("ActionItems").First(&meeting, id).Error; err == nil {
+		for _, action := range meeting.ActionItems {
+			config.DB.Model(&action).Association("PICs").Clear()
+		}
+	}
+
 	if err := config.DB.Delete(&models.MeetingNote{}, id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus jurnal rapat"})
 		return
@@ -81,7 +150,7 @@ func DeleteMeeting(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Jurnal rapat berhasil dihapus"})
 }
 
-// Centang / Batal Centang tugas Action Item
+// Centang / Batal Centang tugas
 func ToggleActionItem(c *gin.Context) {
 	actionID := c.Param("action_id")
 	var actionItem models.MeetingActionItem
@@ -91,7 +160,6 @@ func ToggleActionItem(c *gin.Context) {
 		return
 	}
 
-	// Balikkan status (jika true jadi false, jika false jadi true)
 	config.DB.Model(&actionItem).Update("is_done", !actionItem.IsDone)
 	c.JSON(http.StatusOK, gin.H{"message": "Status tugas diperbarui!"})
 }

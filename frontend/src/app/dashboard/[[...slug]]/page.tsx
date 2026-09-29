@@ -150,6 +150,7 @@ export default function DashboardPage() {
   // state meeting
   const [meetings, setMeetings] = useState<MeetingNote[]>([]);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<MeetingNote | null>(null);
 
   const [deleteConfirm, setDeleteConfirm] = useState<{
     url: string;
@@ -511,10 +512,24 @@ export default function DashboardPage() {
       case "meetings":
         return (
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <SectionHeader title="Jurnal Rapat & Penugasan Tim" count={meetings.length} badgeColor="blue" buttonText="Buat Jurnal Baru" isAdmin={isAdmin} onAdd={() => setIsMeetingModalOpen(true)} />
+            <SectionHeader
+              title="Jurnal Rapat & Penugasan Tim"
+              count={meetings.length}
+              badgeColor="blue"
+              buttonText="Buat Jurnal Baru"
+              isAdmin={isAdmin}
+              onAdd={() => {
+                setEditingMeeting(null);
+                setIsMeetingModalOpen(true);
+              }}
+            />
             <MeetingTable
               meetings={meetings.filter((m) => m.title.toLowerCase().includes(query) || (m.notes || "").toLowerCase().includes(query))}
               isAdmin={isAdmin}
+              onEdit={(meeting) => {
+                setEditingMeeting(meeting);
+                setIsMeetingModalOpen(true);
+              }}
               onDelete={(id) => deleteData(`${process.env.NEXT_PUBLIC_API_URL}/api/meetings/${id}`, "Jurnal rapat dihapus!", fetchMeetings, true)}
               onToggleAction={async (actionId) => {
                 try {
@@ -663,7 +678,7 @@ export default function DashboardPage() {
       <FeeCalculatorModal isOpen={isFeeModalOpen} onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />
       <PricelistModal isOpen={isPricelistModalOpen} onClose={() => setIsPricelistModalOpen(false)} onSuccess={mutateDashboard} editData={editingPricelist} categories={categories} />
       <ConfirmModal isOpen={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} onConfirm={executeDeleteGlobal} isLoading={isDeletingData} title={""} message={""} />
-      <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} project={null} teams={teams} onRefresh={fetchMeetings} />
+      <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} project={null} teams={teams} onRefresh={fetchMeetings} editData={editingMeeting} />
     </div>
   );
 }

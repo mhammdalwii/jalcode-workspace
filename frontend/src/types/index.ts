@@ -154,8 +154,8 @@ export interface MeetingActionItem {
   id?: number;
   meeting_id?: number;
   task: string;
-  pic_id: number;
-  pic?: TeamMember;
+  pic_ids?: number[];
+  pics?: TeamMember[];
   is_done?: boolean;
 }
 

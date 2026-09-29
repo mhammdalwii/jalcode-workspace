@@ -1,8 +1,8 @@
 package dto
 
 type ActionItemReq struct {
-	Task  string `json:"task" binding:"required"`
-	PICID uint   `json:"pic_id" binding:"required"`
+	Task   string `json:"task" binding:"required"`
+	PICIDs []uint `json:"pic_ids" binding:"required"`
 }
 
 type MeetingNoteReq struct {
