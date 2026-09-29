@@ -7,8 +7,7 @@ type MeetingActionItem struct {
 	ID        uint        `json:"id" gorm:"primaryKey"`
 	MeetingID uint        `json:"meeting_id"`
 	Task      string      `json:"task"`
-	PICID     uint        `json:"pic_id"` 
-	PIC       *TeamMember `json:"pic,omitempty" gorm:"foreignKey:PICID"`
+	PICs      []TeamMember  `json:"pics" gorm:"many2many:action_item_pics;"`
 	IsDone    bool        `json:"is_done" gorm:"default:false"` 
 }
 

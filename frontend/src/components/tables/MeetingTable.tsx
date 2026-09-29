@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Trash2, CalendarDays, CheckSquare, Square, FileText, Users } from "lucide-react";
+// 🚀 BARU: Tambahkan ikon Pencil/Edit
+import { Trash2, CalendarDays, CheckSquare, Square, Users, Pencil } from "lucide-react";
 import { MeetingNote } from "@/types";
 import Pagination from "@/components/ui/Pagination";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -7,16 +8,16 @@ import ConfirmModal from "@/components/ui/ConfirmModal";
 interface MeetingTableProps {
   meetings: MeetingNote[];
   onDelete: (id: number) => void;
+  onEdit: (meeting: MeetingNote) => void; // 🚀 BARU
   onToggleAction: (actionId: number) => void;
   isAdmin: boolean;
 }
 
-export default function MeetingTable({ meetings, onDelete, onToggleAction, isAdmin }: MeetingTableProps) {
+export default function MeetingTable({ meetings, onDelete, onEdit, onToggleAction, isAdmin }: MeetingTableProps) {
   const [deleteModalId, setDeleteModalId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 5;
 
-  // Logika Pagination
   const totalPages = Math.ceil(meetings.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
@@ -71,20 +72,31 @@ export default function MeetingTable({ meetings, onDelete, onToggleAction, isAdm
                   </td>
 
                   <td className="px-6 py-4">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {meeting.action_items && meeting.action_items.length > 0 ? (
                         meeting.action_items.map((item) => (
                           <div key={item.id} className="flex items-start gap-2 group/item">
                             <button
                               onClick={() => onToggleAction(item.id!)}
                               className={`mt-0.5 shrink-0 transition-colors ${item.is_done ? "text-emerald-500 hover:text-emerald-600" : "text-gray-300 hover:text-teal-500"}`}
-                              disabled={!isAdmin} // Hapus atribut ini jika anggota tim biasa boleh mencentang
+                              disabled={!isAdmin}
                             >
                               {item.is_done ? <CheckSquare size={16} /> : <Square size={16} />}
                             </button>
                             <div className="flex flex-col">
                               <span className={`text-xs font-medium leading-tight ${item.is_done ? "line-through text-gray-400" : "text-gray-700"}`}>{item.task}</span>
-                              <span className="text-[10px] font-bold text-teal-600 mt-0.5">PIC: {item.pic?.name || "Tim"}</span>
+                              {/* 🚀 BARU: Mapping Banyak PIC */}
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.pics && item.pics.length > 0 ? (
+                                  item.pics.map((p) => (
+                                    <span key={p.id} className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">
+                                      {p.name}
+                                    </span>
+                                  ))
+                                ) : (
+                                  <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded">TBA</span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         ))
@@ -95,10 +107,16 @@ export default function MeetingTable({ meetings, onDelete, onToggleAction, isAdm
                   </td>
 
                   {isAdmin && (
-                    <td className="px-6 py-4 text-center">
-                      <button onClick={() => setDeleteModalId(meeting.id!)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition opacity-0 group-hover:opacity-100" title="Hapus Rapat">
-                        <Trash2 size={18} />
-                      </button>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* 🚀 BARU: Tombol Edit */}
+                        <button onClick={() => onEdit(meeting)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit Rapat">
+                          <Pencil size={16} />
+                        </button>
+                        <button onClick={() => setDeleteModalId(meeting.id!)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus Rapat">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>

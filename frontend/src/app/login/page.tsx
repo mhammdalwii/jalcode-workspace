@@ -36,6 +36,7 @@ export default function LoginPage() {
       Cookies.set("role", data.user.role, { expires: 1 });
 
       window.location.href = "/dashboard";
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
       setIsLoading(false);
