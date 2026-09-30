@@ -26,7 +26,7 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
   const formatRupiah = (num: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(num);
 
   const pihakKeduaName = pj ? pj.name : "Muhammad Alwi";
-  const pihakKeduaRole = pj ? pj.role : "Founder & CEO";
+  const pihakKeduaRole = pj ? pj.role : "Founder";
 
   return (
     <div ref={ref} className="bg-white text-black px-12 py-10 print:p-0 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border relative">
