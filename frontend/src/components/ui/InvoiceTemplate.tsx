@@ -6,9 +6,25 @@ interface Props {
   invoice: Invoice | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agency: any;
+  payment?: {
+    bankName: string; // TAMBAHAN
+    accountName: string;
+    accountNumber: string;
+  };
+  termin?: {
+    current: number;
+    total: number;
+    label?: string;
+  };
 }
 
-const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, ref) => {
+const DEFAULT_PAYMENT = {
+  bankName: "Bank Negara Indonesia (BNI)",
+  accountName: "Muhammad Alwi",
+  accountNumber: "1851048968",
+};
+
+const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency, payment, termin }, ref) => {
   // Gunakan data dari props database, jika kosong gunakan default
   const profile = agency || {
     company: "Jalcode",
@@ -17,6 +33,9 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
     email: "hello@jalcode.com",
     phone: "0852-1333-3166",
   };
+
+  // TAMBAHAN
+  const paymentInfo = payment ?? DEFAULT_PAYMENT;
 
   const formatRupiah = (angka: number) => {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(angka);
@@ -47,6 +66,13 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
             <div className="text-center mb-6">
               <h2 className="text-xl font-bold underline underline-offset-4 uppercase tracking-widest">TAGIHAN (INVOICE)</h2>
               <p className="text-gray-600 mt-1 text-xs font-sans font-medium">Nomor: {invoice.invoice_number}</p>
+              {/* TAMBAHAN: label termin, tampil hanya kalau prop-nya diisi */}
+              {termin && (
+                <p className="text-gray-700 mt-1 text-xs font-sans font-bold uppercase tracking-wide">
+                  Termin {termin.current} dari {termin.total}
+                  {termin.label ? ` — ${termin.label}` : ""}
+                </p>
+              )}
             </div>
 
             {/* INFO KLIEN & TANGGAL */}
@@ -129,9 +155,9 @@ const InvoiceTemplate = forwardRef<HTMLDivElement, Props>(({ invoice, agency }, 
                 <h3 className="font-bold bg-blue-50 px-2 py-1 border-l-4 border-blue-600 mb-3 uppercase tracking-wider text-xs">Instruksi Pembayaran</h3>
                 <p className="mb-2 text-gray-800">Mohon melakukan transfer ke rekening resmi kami:</p>
                 <ul className="space-y-1 mb-4 font-bold text-gray-900">
-                  <li>Bank: Bank Negara Indonesia (BNI)</li>
-                  <li>Nomor Rekening: 1851048968</li>
-                  <li>Atas Nama: {profile.name}</li>
+                  <li>Bank: {paymentInfo.bankName}</li>
+                  <li>Nomor Rekening: {paymentInfo.accountNumber}</li>
+                  <li>Atas Nama: {paymentInfo.accountName}</li>
                 </ul>
 
                 <div className="text-[11px] text-gray-500 italic p-3 bg-gray-50 border-l-2 border-gray-300 space-y-1">

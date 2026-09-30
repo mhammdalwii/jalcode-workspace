@@ -88,6 +88,7 @@ export default function ProjectModal({ isOpen, onClose, onSuccess, teams, client
       toast.success(`Proyek berhasil ${editData ? "diperbarui" : "ditambahkan"}!`);
       onSuccess();
       onClose();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       toast.error(err.message);
     }

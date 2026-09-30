@@ -17,10 +17,24 @@ interface QuotationProps {
     description: string;
     tech: string;
     maintenance: number;
+    includesDomainHosting?: boolean; // TAMBAHAN: default true, matikan untuk proyek mobile/IoT/UI-UX
+  };
+  payment?: {
+    bankName: string; // TAMBAHAN
+    accountName: string; // TAMBAHAN — nama badan usaha, bukan nama pribadi
+    accountNumber: string;
   };
 }
 
-const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project, items, scope }, ref) => {
+// TAMBAHAN: nilai default sementara sampai Jalcode punya rekening badan usaha.
+// Ganti default ini begitu rekening resmi tersedia, atau isi `payment` per-quotation dari data proyek.
+const DEFAULT_PAYMENT = {
+  bankName: "Bank BNI",
+  accountName: "Muhammad Alwi",
+  accountNumber: "1851048968",
+};
+
+const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project, items, scope, payment }, ref) => {
   const totalInvestasi = items.reduce((acc, curr) => acc + curr.cost, 0);
   const totalWaktu = items.reduce((acc, curr) => acc + (Number(curr.duration) || 0), 0);
 
@@ -29,6 +43,10 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
   const tahun = todayDate.getFullYear();
 
   const formatRupiah = (num: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(num);
+
+  // TAMBAHAN
+  const includesDomainHosting = scope.includesDomainHosting ?? true;
+  const paymentInfo = payment ?? DEFAULT_PAYMENT;
 
   return (
     <div ref={ref} className="bg-white text-black px-12 py-10 print:p-0 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border relative">
@@ -99,7 +117,8 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
             </tr>
           </tbody>
         </table>
-        <p className="mt-2 text-xs text-gray-500 italic">* Biaya di atas sudah termasuk biaya sewa domain & server untuk tahun pertama</p>
+        {/* TAMBAHAN: baris ini kini kondisional, hanya tampil untuk proyek yang benar-benar butuh domain & hosting */}
+        {includesDomainHosting && <p className="mt-2 text-xs text-gray-500 italic">* Biaya di atas sudah termasuk biaya sewa domain & server untuk tahun pertama</p>}
       </div>
 
       {/* 2. FASILITAS TAMBAHAN */}
@@ -130,7 +149,10 @@ const QuotationDocument = forwardRef<HTMLDivElement, QuotationProps>(({ project,
             <strong>Termin III (20%):</strong> Pelunasan sebelum sistem diluncurkan (Go-Live).
           </li>
         </ul>
-        <p className="mt-3 text-sm font-semibold">Rekening Pembayaran: Bank BNI a/n Muhammad Alwi (1851048968).</p>
+        {/* TAMBAHAN: rekening atas nama badan usaha, bukan pribadi — lihat DEFAULT_PAYMENT di atas untuk mengisi data asli */}
+        <p className="mt-3 text-sm font-semibold">
+          Rekening Pembayaran: {paymentInfo.bankName} a/n {paymentInfo.accountName} ({paymentInfo.accountNumber})
+        </p>
       </div>
 
       {/* PENUTUP & TTD */}

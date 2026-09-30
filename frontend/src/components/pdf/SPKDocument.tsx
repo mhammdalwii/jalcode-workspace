@@ -12,7 +12,11 @@ interface SPKProps {
     dpPercent: number;
     t2Percent: number;
     revisions: number;
+    revisionScope?: "per_milestone" | "total_project"; // TAMBAHAN: default "per_milestone"
     maintenance: number;
+    latePaymentPenaltyPercent?: number; // TAMBAHAN: denda keterlambatan pembayaran per hari, default 0.5
+    lateDeliveryGraceDays?: number; // TAMBAHAN: toleransi keterlambatan pengerjaan, default 7
+    jurisdiction?: string; // TAMBAHAN: kota pengadilan, default "Makassar"
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pj: any;
@@ -27,6 +31,12 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
 
   const pihakKeduaName = pj ? pj.name : "Muhammad Alwi";
   const pihakKeduaRole = pj ? pj.role : "Founder";
+
+  // TAMBAHAN: nilai default supaya SPK lama yang belum mengisi field baru tetap tampil wajar
+  const revisionScope = spkData.revisionScope ?? "per_milestone";
+  const latePenalty = spkData.latePaymentPenaltyPercent ?? 0.5;
+  const graceDays = spkData.lateDeliveryGraceDays ?? 7;
+  const jurisdiction = spkData.jurisdiction ?? "Makassar";
 
   return (
     <div ref={ref} className="bg-white text-black px-12 py-10 print:p-0 w-[210mm] min-h-[297mm] mx-auto text-[13px] leading-relaxed font-serif box-border relative">
@@ -112,7 +122,63 @@ const SPKDocument = forwardRef<HTMLDivElement, SPKProps>(({ project, clientSigna
         <div className="flex items-start gap-3">
           <p className="font-bold min-w-17.5">Pasal 5</p>
           <p className="text-justify">
-            <strong>(Revisi & Maintenance):</strong> PIHAK KEDUA memberikan <strong>{spkData.revisions}x</strong> revisi minor dan garansi pemeliharaan (maintenance) selama <strong>{spkData.maintenance} bulan</strong>.
+            <strong>(Revisi & Maintenance):</strong> PIHAK KEDUA memberikan <strong>{spkData.revisions}x</strong> revisi minor {/* TAMBAHAN: memperjelas cakupan jatah revisi */}
+            <strong>{revisionScope === "per_milestone" ? "untuk setiap tahap/milestone pekerjaan" : "untuk keseluruhan proyek"}</strong>, dan garansi pemeliharaan (maintenance) selama <strong>{spkData.maintenance} bulan</strong>. Revisi di
+            luar jatah tersebut, atau perubahan yang mengubah lingkup kerja sebagaimana dimaksud pada Pasal 1, akan dihitung sebagai pekerjaan tambahan dan dikenakan biaya sesuai kesepakatan baru antara kedua belah pihak.
+          </p>
+        </div>
+
+        {/* TAMBAHAN: Pasal 6 — Kepemilikan Aset */}
+        <div className="flex items-start gap-3">
+          <p className="font-bold min-w-17.5">Pasal 6</p>
+          <p className="text-justify">
+            <strong>(Kepemilikan Aset):</strong> Kode sumber (source code), desain, dan aset digital lain yang dihasilkan dari pekerjaan ini sepenuhnya menjadi hak milik PIHAK PERTAMA setelah PIHAK PERTAMA menyelesaikan pelunasan (Termin 3)
+            secara penuh. Sebelum pelunasan diterima, hak kepemilikan dan hak pakai penuh tetap berada pada PIHAK KEDUA.
+          </p>
+        </div>
+
+        {/* TAMBAHAN: Pasal 7 — Keterlambatan */}
+        <div className="flex items-start gap-3">
+          <p className="font-bold min-w-17.5">Pasal 7</p>
+          <div className="text-justify">
+            <strong>(Keterlambatan):</strong>
+            <ul className="list-disc ml-6 mt-0.5 space-y-0.5">
+              <li>
+                Apabila PIHAK PERTAMA terlambat membayar termin yang telah jatuh tempo, PIHAK KEDUA berhak menghentikan sementara pengerjaan sampai pembayaran diterima, tanpa mengubah total waktu pengerjaan yang telah disepakati pada Pasal
+                2.
+              </li>
+              <li>
+                Apabila PIHAK KEDUA terlambat menyelesaikan pekerjaan melebihi <strong>{graceDays} hari kerja</strong> dari waktu yang disepakati tanpa alasan yang dapat diterima (force majeure atau keterlambatan input dari PIHAK PERTAMA),
+                PIHAK KEDUA memberikan potongan sebesar <strong>{latePenalty}%</strong> dari nilai termin yang sedang berjalan untuk setiap 7 hari keterlambatan, dengan potongan maksimal 20% dari nilai termin tersebut.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* TAMBAHAN: Pasal 8 — Kerahasiaan */}
+        <div className="flex items-start gap-3">
+          <p className="font-bold min-w-17.5">Pasal 8</p>
+          <p className="text-justify">
+            <strong>(Kerahasiaan):</strong> Kedua belah pihak sepakat untuk menjaga kerahasiaan data, dokumen, dan informasi bisnis yang diperoleh selama proses kerjasama ini, dan tidak akan mengungkapkannya kepada pihak ketiga tanpa
+            persetujuan tertulis dari pihak yang bersangkutan, kecuali diwajibkan oleh peraturan perundang-undangan yang berlaku.
+          </p>
+        </div>
+
+        {/* TAMBAHAN: Pasal 9 — Force Majeure */}
+        <div className="flex items-start gap-3">
+          <p className="font-bold min-w-17.5">Pasal 9</p>
+          <p className="text-justify">
+            <strong>(Force Majeure):</strong> Kedua belah pihak dibebaskan dari tanggung jawab atas keterlambatan atau kegagalan pelaksanaan kewajiban dalam perjanjian ini apabila disebabkan oleh keadaan di luar kendali wajar kedua belah
+            pihak, termasuk namun tidak terbatas pada bencana alam, gangguan infrastruktur nasional, atau kebijakan pemerintah.
+          </p>
+        </div>
+
+        {/* TAMBAHAN: Pasal 10 — Penyelesaian Perselisihan */}
+        <div className="flex items-start gap-3">
+          <p className="font-bold min-w-17.5">Pasal 10</p>
+          <p className="text-justify">
+            <strong>(Penyelesaian Perselisihan):</strong> Segala perselisihan yang timbul dari perjanjian ini akan diselesaikan terlebih dahulu secara musyawarah untuk mufakat. Apabila tidak tercapai kesepakatan, kedua belah pihak sepakat
+            menyelesaikannya melalui Pengadilan Negeri <strong>{jurisdiction}</strong>.
           </p>
         </div>
       </div>

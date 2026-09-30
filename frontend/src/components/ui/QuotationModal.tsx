@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { X, Plus, Trash2, Printer, FileText } from "lucide-react";
+import { X, Plus, Trash2, Printer, FileText, Server } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import QuotationDocument from "@/components/pdf/QuotationDocument";
-import CurrencyInput from "@/components/ui/CurrencyInput"; // 🚀 IMPORT KOMPONEN BARU
+import CurrencyInput from "@/components/ui/CurrencyInput";
 import { Project } from "@/types";
 
 interface QuotationModalProps {
@@ -23,6 +23,7 @@ export default function QuotationModal({ isOpen, onClose, project }: QuotationMo
     description: "",
     tech: "Next.js, Tailwind CSS, Golang",
     maintenance: 3,
+    includesDomainHosting: true, // 🚀 BARU: State default untuk Domain & Hosting
   });
 
   const [items, setItems] = useState([
@@ -48,22 +49,44 @@ export default function QuotationModal({ isOpen, onClose, project }: QuotationMo
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Layanan Utama</label>
-              <input value={scope.service} onChange={(e) => setScope({ ...scope, service: e.target.value })} className="w-full border rounded-lg p-2 text-sm" />
+              <input value={scope.service} onChange={(e) => setScope({ ...scope, service: e.target.value })} className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Teknologi</label>
-              <input value={scope.tech} onChange={(e) => setScope({ ...scope, tech: e.target.value })} className="w-full border rounded-lg p-2 text-sm" />
+              <input value={scope.tech} onChange={(e) => setScope({ ...scope, tech: e.target.value })} className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Deskripsi Pekerjaan</label>
-              <textarea value={scope.description} onChange={(e) => setScope({ ...scope, description: e.target.value })} className="w-full border rounded-lg p-2 text-sm" rows={2}></textarea>
+              <textarea value={scope.description} onChange={(e) => setScope({ ...scope, description: e.target.value })} className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" rows={2}></textarea>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Masa Garansi (Bulan)</label>
-              <input type="number" value={scope.maintenance} onChange={(e) => setScope({ ...scope, maintenance: Number(e.target.value) })} className="w-full border rounded-lg p-2 text-sm" />
+              <input type="number" value={scope.maintenance} onChange={(e) => setScope({ ...scope, maintenance: Number(e.target.value) })} className="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+            </div>
+          </div>
+
+          {/* 🚀 BARU: TOGGLE DOMAIN & HOSTING */}
+          <div
+            className="flex items-center gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100 transition-colors hover:bg-blue-50 cursor-pointer"
+            onClick={() => setScope({ ...scope, includesDomainHosting: !scope.includesDomainHosting })}
+          >
+            <div className={`p-2 rounded-lg ${scope.includesDomainHosting ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-500"}`}>
+              <Server size={18} />
+            </div>
+            <div className="flex-1 select-none">
+              <h4 className="text-sm font-bold text-gray-800">Sertakan Biaya Domain & Hosting</h4>
+              <p className="text-xs text-gray-500">Tampilkan catatan bahwa harga sudah termasuk server & domain 1 tahun.</p>
+            </div>
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={scope.includesDomainHosting}
+                onChange={(e) => setScope({ ...scope, includesDomainHosting: e.target.checked })}
+                className="w-5 h-5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer pointer-events-none"
+              />
             </div>
           </div>
 
@@ -110,7 +133,6 @@ export default function QuotationModal({ isOpen, onClose, project }: QuotationMo
                       </div>
                       <div className="w-1/2">
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Biaya (Rp)</p>
-                        {/* 🚀 MENGGUNAKAN KOMPONEN CURRENCY INPUT */}
                         <CurrencyInput
                           placeholder="Biaya (Rp)"
                           className="w-full border rounded-lg p-2 text-sm font-mono font-bold text-blue-600 outline-blue-500"
@@ -124,12 +146,12 @@ export default function QuotationModal({ isOpen, onClose, project }: QuotationMo
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-red-500 pt-2">
+                  <button onClick={() => setItems(items.filter((_, i) => i !== idx))} className="text-slate-300 hover:text-red-500 pt-2 transition">
                     <Trash2 size={20} />
                   </button>
                 </div>
               ))}
-              <button onClick={() => setItems([...items, { description: "", features: "", duration: "0", cost: 0 }])} className="flex items-center gap-1 text-xs font-bold text-blue-600 px-2 mt-2">
+              <button onClick={() => setItems([...items, { description: "", features: "", duration: "0", cost: 0 }])} className="flex items-center gap-1 text-xs font-bold text-blue-600 px-2 mt-2 hover:text-blue-700 transition">
                 <Plus size={14} /> Tambah Item
               </button>
             </div>
@@ -137,10 +159,10 @@ export default function QuotationModal({ isOpen, onClose, project }: QuotationMo
         </div>
 
         <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium hover:bg-gray-200 rounded-lg transition">
             Batal
           </button>
-          <button onClick={handlePrint} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 shadow-md">
+          <button onClick={handlePrint} className="px-6 py-2 bg-blue-600 text-white rounded-lg font-bold flex items-center gap-2 hover:bg-blue-700 shadow-md transition">
             <Printer size={18} /> Cetak PDF
           </button>
         </div>
