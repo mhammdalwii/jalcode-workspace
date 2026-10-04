@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Cookies from "js-cookie";
 import toast, { Toaster } from "react-hot-toast";
@@ -12,38 +12,39 @@ import { TeamMember, Project, Client, Mentee, ActivityLog, ContentPlan, Invoice,
 import { isAdminOrFounder } from "@/utils/auth";
 import { fetchWithAuth } from "@/utils/fetchApi";
 
-// --- KOMPONEN IMPORT ---
-import ProjectTable from "@/components/tables/ProjectTable";
-import TeamTable from "@/components/tables/TeamTable";
-import ClientTable from "@/components/tables/ClientTable";
-import MenteeTable from "@/components/tables/MenteeTable";
-import ProjectKanban from "@/components/tables/ProjectKanban";
-import InvoiceTable from "@/components/tables/InvoiceTable";
-
-import StatCards from "@/components/dashboard/StatCards";
-import SearchFilterBar from "@/components/dashboard/SearchFilterBar";
-import SectionHeader from "@/components/dashboard/SectionHeader";
-import DashboardOverview from "@/components/dashboard/DashboardOverview";
-import SettingsView from "@/components/dashboard/SettingsView";
 import Sidebar from "@/components/ui/Sidebar";
+import useSWR from "swr";
 
-const ProjectModal = dynamic(() => import("@/components/ui/ProjectModal"), { ssr: false, loading: () => <div className="hidden">Memuat Form...</div> });
+const FeatureLoading = () => <div className="p-8 text-center text-gray-500">Memuat fitur...</div>;
+const EMPTY_ARRAY: never[] = [];
+
+const ProjectTable = dynamic(() => import("@/components/tables/ProjectTable"), { loading: FeatureLoading });
+const TeamTable = dynamic(() => import("@/components/tables/TeamTable"), { loading: FeatureLoading });
+const ClientTable = dynamic(() => import("@/components/tables/ClientTable"), { loading: FeatureLoading });
+const MenteeTable = dynamic(() => import("@/components/tables/MenteeTable"), { loading: FeatureLoading });
+const ProjectKanban = dynamic(() => import("@/components/tables/ProjectKanban"), { loading: FeatureLoading });
+const InvoiceTable = dynamic(() => import("@/components/tables/InvoiceTable"), { loading: FeatureLoading });
+const PricelistTable = dynamic(() => import("@/components/tables/PricelistTable"), { loading: FeatureLoading });
+const ContentListTable = dynamic(() => import("@/components/tables/ContentListTable"), { loading: FeatureLoading });
+const MeetingTable = dynamic(() => import("@/components/tables/MeetingTable"), { loading: FeatureLoading });
+const StatCards = dynamic(() => import("@/components/dashboard/StatCards"), { loading: FeatureLoading });
+const SearchFilterBar = dynamic(() => import("@/components/dashboard/SearchFilterBar"));
+const SectionHeader = dynamic(() => import("@/components/dashboard/SectionHeader"));
+const DashboardOverview = dynamic(() => import("@/components/dashboard/DashboardOverview"), { loading: FeatureLoading });
+const SettingsView = dynamic(() => import("@/components/dashboard/SettingsView"), { loading: FeatureLoading });
+const ProjectModal = dynamic(() => import("@/components/ui/ProjectModal"), { ssr: false });
 const ClientModal = dynamic(() => import("@/components/ui/ClientModal"), { ssr: false });
 const MenteeModal = dynamic(() => import("@/components/ui/MenteeModal"), { ssr: false });
 const ProjectDetailPanel = dynamic(() => import("@/components/ui/ProjectDetailPanel"), { ssr: false });
-import ActivityPanel from "@/components/ui/ActivityPanel";
-import CredentialPanel from "@/components/ui/CredentialPanel";
-import ContentModal from "@/components/ui/ContentModal";
-import InvoiceModal from "@/components/ui/InvoiceModal";
-import TeamModal from "@/components/ui/TeamModal";
-import useSWR from "swr";
-import FeeCalculatorModal from "@/components/ui/FeeCalculatorModal";
-import PricelistTable from "@/components/tables/PricelistTable";
-import PricelistModal from "@/components/ui/PricelistModal";
-import ConfirmModal from "@/components/ui/ConfirmModal";
-import ContentListTable from "@/components/tables/ContentListTable";
-import MeetingTable from "@/components/tables/MeetingTable";
-import MeetingModal from "@/components/ui/MeetingModal";
+const ActivityPanel = dynamic(() => import("@/components/ui/ActivityPanel"), { ssr: false });
+const CredentialPanel = dynamic(() => import("@/components/ui/CredentialPanel"), { ssr: false });
+const ContentModal = dynamic(() => import("@/components/ui/ContentModal"), { ssr: false });
+const InvoiceModal = dynamic(() => import("@/components/ui/InvoiceModal"), { ssr: false });
+const TeamModal = dynamic(() => import("@/components/ui/TeamModal"), { ssr: false });
+const FeeCalculatorModal = dynamic(() => import("@/components/ui/FeeCalculatorModal"), { ssr: false });
+const PricelistModal = dynamic(() => import("@/components/ui/PricelistModal"), { ssr: false });
+const ConfirmModal = dynamic(() => import("@/components/ui/ConfirmModal"), { ssr: false });
+const MeetingModal = dynamic(() => import("@/components/ui/MeetingModal"), { ssr: false });
 
 const fetcher = async (url: string) => {
   const res = await fetchWithAuth(url);
@@ -68,15 +69,15 @@ export default function DashboardPage() {
   });
 
   // --- STATE UTAMA ---
-  const teams: TeamMember[] = dashboardRes?.data?.teams || [];
-  const projects: Project[] = dashboardRes?.data?.projects || [];
-  const clients: Client[] = dashboardRes?.data?.clients || [];
-  const mentees: Mentee[] = dashboardRes?.data?.mentees || [];
-  const contents: ContentPlan[] = dashboardRes?.data?.contents || [];
-  const invoices: Invoice[] = dashboardRes?.data?.invoices || [];
+  const teams: TeamMember[] = dashboardRes?.data?.teams || EMPTY_ARRAY;
+  const projects: Project[] = dashboardRes?.data?.projects || EMPTY_ARRAY;
+  const clients: Client[] = dashboardRes?.data?.clients || EMPTY_ARRAY;
+  const mentees: Mentee[] = dashboardRes?.data?.mentees || EMPTY_ARRAY;
+  const contents: ContentPlan[] = dashboardRes?.data?.contents || EMPTY_ARRAY;
+  const invoices: Invoice[] = dashboardRes?.data?.invoices || EMPTY_ARRAY;
   const agencyProfile = dashboardRes?.data?.agency || null;
-  const pricelists: Pricelist[] = dashboardRes?.data?.pricelists || [];
-  const categories: Category[] = dashboardRes?.data?.categories || [];
+  const pricelists: Pricelist[] = dashboardRes?.data?.pricelists || EMPTY_ARRAY;
+  const categories: Category[] = dashboardRes?.data?.categories || EMPTY_ARRAY;
 
   const [activities, setActivities] = useState<ActivityLog[]>([]);
 
@@ -241,19 +242,19 @@ export default function DashboardPage() {
   // --- LOGIKA FILTER PENCARIAN TERPUSAT ---
   const query = searchQuery.toLowerCase();
 
-  const filteredProjects = projects.filter((p) => (p.title.toLowerCase().includes(query) || (p.pic?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || p.status === filterStatus));
+  const filteredProjects = useMemo(() => projects.filter((p) => (p.title.toLowerCase().includes(query) || (p.pic?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || p.status === filterStatus)), [projects, query, filterStatus]);
 
-  const filteredTeams = teams.filter((t) => (t.name.toLowerCase().includes(query) || t.email.toLowerCase().includes(query)) && (filterRole === "All" || t.role === filterRole));
+  const filteredTeams = useMemo(() => teams.filter((t) => (t.name.toLowerCase().includes(query) || t.email.toLowerCase().includes(query)) && (filterRole === "All" || t.role === filterRole)), [teams, query, filterRole]);
 
-  const filteredClients = clients.filter((c) => c.company.toLowerCase().includes(query) || c.name.toLowerCase().includes(query));
+  const filteredClients = useMemo(() => clients.filter((c) => c.company.toLowerCase().includes(query) || c.name.toLowerCase().includes(query)), [clients, query]);
 
-  const filteredMentees = mentees.filter((m) => (m.name.toLowerCase().includes(query) || (m.mentor?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || m.status === filterStatus));
+  const filteredMentees = useMemo(() => mentees.filter((m) => (m.name.toLowerCase().includes(query) || (m.mentor?.name || "").toLowerCase().includes(query)) && (filterStatus === "All" || m.status === filterStatus)), [mentees, query, filterStatus]);
 
-  const filteredContents = contents.filter((c) => (c.title.toLowerCase().includes(query) || (c.pics && c.pics.some((p) => p.name.toLowerCase().includes(query)))) && (filterStatus === "All" || c.status === filterStatus));
+  const filteredContents = useMemo(() => contents.filter((c) => (c.title.toLowerCase().includes(query) || (c.pics && c.pics.some((p) => p.name.toLowerCase().includes(query)))) && (filterStatus === "All" || c.status === filterStatus)), [contents, query, filterStatus]);
 
-  const filteredInvoices = invoices.filter((i) => i.invoice_number.toLowerCase().includes(query) || (i.client_name || i.project_title).toLowerCase().includes(query));
+  const filteredInvoices = useMemo(() => invoices.filter((i) => i.invoice_number.toLowerCase().includes(query) || (i.client_name || i.project_title).toLowerCase().includes(query)), [invoices, query]);
 
-  const filteredPricelists = pricelists.filter((p) => p.service_name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+  const filteredPricelists = useMemo(() => pricelists.filter((p) => p.service_name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query)), [pricelists, query]);
 
   // --- DELEGASI RENDER KONTEN (MEMBUAT KODE LEBIH RAPI) ---
   const renderActiveTab = () => {
@@ -642,11 +643,11 @@ export default function DashboardPage() {
       </div>
 
       {/* SEMUA MODAL BERADA DI BAWAH SINI */}
-      <ProjectDetailPanel isOpen={isDetailPanelOpen} onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={mutateDashboard} />
-      <ProjectModal isOpen={isProjectModalOpen} onClose={() => setIsProjectModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingProject} clients={clients} categories={categories} />
-      <ClientModal isOpen={isClientModalOpen} onClose={() => setIsClientModalOpen(false)} onSuccess={mutateDashboard} editData={editingClient} />
-      <MenteeModal isOpen={isMenteeModalOpen} onClose={() => setIsMenteeModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingMentee} />
-      <TeamModal
+      {isDetailPanelOpen && <ProjectDetailPanel isOpen onClose={() => setIsDetailPanelOpen(false)} project={projects.find((p) => p.id === selectedProject?.id) || null} onRefresh={mutateDashboard} />}
+      {isProjectModalOpen && <ProjectModal isOpen onClose={() => setIsProjectModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingProject} clients={clients} categories={categories} />}
+      {isClientModalOpen && <ClientModal isOpen onClose={() => setIsClientModalOpen(false)} onSuccess={mutateDashboard} editData={editingClient} />}
+      {isMenteeModalOpen && <MenteeModal isOpen onClose={() => setIsMenteeModalOpen(false)} onSuccess={mutateDashboard} teams={teams} editData={editingMentee} />}
+      {isTeamModalOpen && <TeamModal
         isOpen={isTeamModalOpen}
         onClose={() => setIsTeamModalOpen(false)}
         onSubmit={async (e) => {
@@ -679,15 +680,15 @@ export default function DashboardPage() {
         formData={teamFormData}
         setFormData={setTeamFormData}
         isEditMode={!!editingTeam}
-      />
-      <ActivityPanel isOpen={isActivityPanelOpen} onClose={() => setIsActivityPanelOpen(false)} activities={activities} />
-      <CredentialPanel isOpen={isCredentialPanelOpen} onClose={() => setIsCredentialPanelOpen(false)} client={selectedClientForVault} />
-      <ContentModal isOpen={isContentModalOpen} onClose={() => setIsContentModalOpen(false)} onSuccess={mutateDashboard} editData={editingContent} teams={teams} />
-      <InvoiceModal isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} onSuccess={mutateDashboard} editData={editingInvoice} projects={projects} />
-      <FeeCalculatorModal isOpen={isFeeModalOpen} onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />
-      <PricelistModal isOpen={isPricelistModalOpen} onClose={() => setIsPricelistModalOpen(false)} onSuccess={mutateDashboard} editData={editingPricelist} categories={categories} />
-      <ConfirmModal isOpen={deleteConfirm !== null} onClose={() => setDeleteConfirm(null)} onConfirm={executeDeleteGlobal} isLoading={isDeletingData} title={""} message={""} />
-      <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} project={null} teams={teams} onRefresh={fetchMeetings} editData={editingMeeting} />
+      />}
+      {isActivityPanelOpen && <ActivityPanel isOpen onClose={() => setIsActivityPanelOpen(false)} activities={activities} />}
+      {isCredentialPanelOpen && <CredentialPanel isOpen onClose={() => setIsCredentialPanelOpen(false)} client={selectedClientForVault} />}
+      {isContentModalOpen && <ContentModal isOpen onClose={() => setIsContentModalOpen(false)} onSuccess={mutateDashboard} editData={editingContent} teams={teams} />}
+      {isInvoiceModalOpen && <InvoiceModal isOpen onClose={() => setIsInvoiceModalOpen(false)} onSuccess={mutateDashboard} editData={editingInvoice} projects={projects} />}
+      {isFeeModalOpen && <FeeCalculatorModal isOpen onClose={() => setIsFeeModalOpen(false)} invoice={selectedInvoiceForFee} project={projects.find((p) => p.id === selectedInvoiceForFee?.project_id)} />}
+      {isPricelistModalOpen && <PricelistModal isOpen onClose={() => setIsPricelistModalOpen(false)} onSuccess={mutateDashboard} editData={editingPricelist} categories={categories} />}
+      {deleteConfirm !== null && <ConfirmModal isOpen onClose={() => setDeleteConfirm(null)} onConfirm={executeDeleteGlobal} isLoading={isDeletingData} title={""} message={""} />}
+      {isMeetingModalOpen && <MeetingModal isOpen onClose={() => setIsMeetingModalOpen(false)} project={null} teams={teams} onRefresh={fetchMeetings} editData={editingMeeting} />}
     </div>
   );
 }

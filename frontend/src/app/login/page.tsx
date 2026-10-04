@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
 import logo from "@/assets/logo/logoRemove.png";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,7 +37,7 @@ export default function LoginPage() {
       Cookies.set("refresh_token", data.refresh_token, { expires: 7 });
       Cookies.set("role", data.user.role, { expires: 1 });
 
-      window.location.href = "/dashboard";
+      router.replace("/dashboard");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err.message);
